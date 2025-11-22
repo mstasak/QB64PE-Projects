@@ -1,0 +1,53 @@
+' Calculate an estimated  value for pi, via pythagoras theorem
+' Platform: QB64PE 4.1.0 on Windows 11 (X64 AMD 5500)
+' iterating over all raster points in a quarter-circle pie slice.
+' Background: && variable suffix denotes a 64 bit integer (_INTEGER64).
+'             ## variable suffix denotes a 80 bit floating point number (_FLOAT).  DOUBLE is a 64 bit floating point number.
+
+Option _Explicit
+
+Dim loops As _Integer64
+Dim percent As _Integer64
+Dim countdown As _Integer64
+Dim i As _Integer64
+Dim inside As _Float
+Dim total As _Float
+Dim x As _Float
+Dim y As _Float
+Dim starttime As Integer
+Dim endtime As Integer
+
+starttime = Timer
+loops = 1E+10 '10 billion
+percent = loops / 100
+inside = 0.0
+total = loops ^ 2
+
+countdown = percent 'for completion reporting
+For i = 0 To loops
+
+    'calculate cells for current value of x, inside circle (1st quadrant only)
+    x = 1.0## * i / loops 'could not find a CFloat_() conversion function!
+    y = Sqr(1.0 - x ^ 2)
+    inside = inside + y * loops
+
+    'report % complete
+    countdown = countdown - 1
+    If countdown = 0 Then 'This should be faster than doing If i mod percent = 0 a billion times!
+        Print CInt(i / percent); "%"
+        countdown = percent
+    End If
+
+Next i
+endtime = Timer
+
+Print "Pi  = approximately "; inside / total * 4
+Print "Executed "; loops; " loops in "; endtime - starttime; "seconds ("; CInt(loops / (endtime - starttime)); " loops per second)."
+
+'Output: Pi = approximately 3.141592653789791
+'        Executed 10000000000  loops in  898 seconds ( 11135857 loops per second),
+
+'Seems like multiplying loops by ten adds about a digit of accuracy to the result...
+
+'Googling a more accurate value (hopefully):
+' pi = 3.1415926535 8979323846 2643383279 5028841971 6939937510 5820974944 5923078164 0628620899 8628034825 3421170679 ...

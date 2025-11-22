@@ -1,0 +1,215 @@
+': This program uses
+': InForm GUI engine for QB64-PE - v1.5.7
+': Fellippe Heitor, (2016 - 2022) - @FellippeHeitor
+': Samuel Gomes, (2023 - 2025) - @a740g
+': https://github.com/a740g/InForm-PE
+'-----------------------------------------------------------
+
+': Controls' IDs: ------------------------------------------------------------------
+DIM SHARED TopicMenu AS LONG
+DIM SHARED EntryMenu AS LONG
+DIM SHARED TagMenu AS LONG
+DIM SHARED HelpMenu AS LONG
+DIM SHARED HelpMenuAbout AS LONG
+DIM SHARED FileMenuNew AS LONG
+DIM SHARED FileMenuOpen AS LONG
+DIM SHARED FileMenuExit AS LONG
+DIM SHARED InfoManager AS LONG
+DIM SHARED Frame1 AS LONG
+DIM SHARED FileMenu AS LONG
+
+': External modules: ---------------------------------------------------------------
+'$INCLUDE:'InForm/InForm.bi'
+'$INCLUDE:'InForm/xp.uitheme'
+'$INCLUDE:'InfoMgr.frm'
+
+': Event procedures: ---------------------------------------------------------------
+SUB __UI_BeforeInit
+
+END SUB
+
+SUB __UI_OnLoad
+
+END SUB
+
+SUB __UI_BeforeUpdateDisplay
+    'This event occurs at approximately 60 frames per second.
+    'You can change the update frequency by calling SetFrameRate DesiredRate%
+
+END SUB
+
+SUB __UI_BeforeUnload
+    'If you set __UI_UnloadSignal = False here you can
+    'cancel the user's request to close.
+
+END SUB
+
+SUB __UI_Click (id AS LONG)
+    SELECT CASE id
+        CASE TopicMenu
+
+        CASE EntryMenu
+
+        CASE TagMenu
+
+        CASE HelpMenu
+
+        CASE HelpMenuAbout
+
+        CASE FileMenuNew
+
+        CASE FileMenuOpen
+
+        CASE FileMenuExit
+
+        CASE InfoManager
+
+        CASE Frame1
+
+        CASE FileMenu
+
+    END SELECT
+END SUB
+
+SUB __UI_MouseEnter (id AS LONG)
+    SELECT CASE id
+        CASE TopicMenu
+
+        CASE EntryMenu
+
+        CASE TagMenu
+
+        CASE HelpMenu
+
+        CASE HelpMenuAbout
+
+        CASE FileMenuNew
+
+        CASE FileMenuOpen
+
+        CASE FileMenuExit
+
+        CASE InfoManager
+
+        CASE Frame1
+
+        CASE FileMenu
+
+    END SELECT
+END SUB
+
+SUB __UI_MouseLeave (id AS LONG)
+    SELECT CASE id
+        CASE TopicMenu
+
+        CASE EntryMenu
+
+        CASE TagMenu
+
+        CASE HelpMenu
+
+        CASE HelpMenuAbout
+
+        CASE FileMenuNew
+
+        CASE FileMenuOpen
+
+        CASE FileMenuExit
+
+        CASE InfoManager
+
+        CASE Frame1
+
+        CASE FileMenu
+
+    END SELECT
+END SUB
+
+SUB __UI_FocusIn (id AS LONG)
+    SELECT CASE id
+    END SELECT
+END SUB
+
+SUB __UI_FocusOut (id AS LONG)
+    'This event occurs right before a control loses focus.
+    'To prevent a control from losing focus, set __UI_KeepFocus = True below.
+    SELECT CASE id
+    END SELECT
+END SUB
+
+SUB __UI_MouseDown (id AS LONG)
+    SELECT CASE id
+        CASE TopicMenu
+
+        CASE EntryMenu
+
+        CASE TagMenu
+
+        CASE HelpMenu
+
+        CASE HelpMenuAbout
+
+        CASE FileMenuNew
+
+        CASE FileMenuOpen
+
+        CASE FileMenuExit
+
+        CASE InfoManager
+
+        CASE Frame1
+
+        CASE FileMenu
+
+    END SELECT
+END SUB
+
+SUB __UI_MouseUp (id AS LONG)
+    SELECT CASE id
+        CASE TopicMenu
+
+        CASE EntryMenu
+
+        CASE TagMenu
+
+        CASE HelpMenu
+
+        CASE HelpMenuAbout
+
+        CASE FileMenuNew
+
+        CASE FileMenuOpen
+
+        CASE FileMenuExit
+
+        CASE InfoManager
+
+        CASE Frame1
+
+        CASE FileMenu
+
+    END SELECT
+END SUB
+
+SUB __UI_KeyPress (id AS LONG)
+    'When this event is fired, __UI_KeyHit will contain the code of the key hit.
+    'You can change it and even cancel it by making it = 0
+    SELECT CASE id
+    END SELECT
+END SUB
+
+SUB __UI_TextChanged (id AS LONG)
+    SELECT CASE id
+    END SELECT
+END SUB
+
+SUB __UI_ValueChanged (id AS LONG)
+    SELECT CASE id
+    END SELECT
+END SUB
+
+SUB __UI_FormResized
+
+END SUB
+
+'$INCLUDE:'InForm/InForm.ui'
