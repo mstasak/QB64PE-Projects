@@ -1,0 +1,18 @@
+Would love to add more modern capabilities to QB64PE.  Might join the open source dev team, or try to make some quality, performant 3rd party add-ons.
+
+Some possibilities include:
+
+- Built-in performant data types like variant, list, dictionary, tree, stack, queue, set, maybe even an enhanced _Mem or bytearray.
+- Real OOP, or perhaps simply encapsulating class-like structure without the inheritance and polymorphism - just encapsulation and abstraction.
+- Better UDT, allowing dynamically-sized members and (if the above OOP item doesn't go anywhere) member functions and subs.
+- Real multi-module apps (without chaining).  Hopefully with some privatization of properties and methods for OOP-like abstraction.
+- (limited value) type aliases.  Let me call a Long a Word.
+- Functions/Subs as objects.  Let me pass a function name or pointer to a sub/function, so it can "call back" for info. 
+- Advanced return types from functions.  return an array, a variant, a UDT.
+- Tuples
+- Array literals or builders.  i.e. smallprimes() = Array(2,3,5,7,11), or commands() = Array("Run", "New", "List", "Load", etc.)
+- RegExp findmatch function.
+- LSP provider for better VS/VSCode/etc. extenstions.
+- Function overloading.  Different functions with same name but different argument signatures.  Possibly with different explicitly stated 
+  return types (or maybe variant return type).
+- Format$() and/or string interpolation for more powerful formatting.
