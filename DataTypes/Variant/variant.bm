@@ -1,0 +1,762 @@
+'$Debug
+'variant.bm
+
+'Implement a Variant system in QB64 PE 4.2.0
+
+''Option _Explicit
+''$Include: 'variant.bi'
+
+Sub VTInit
+    'VTTerminate may have been called, so re-initialize everything
+    ReDim VTStore(1 To 10) As VTHolderStruct
+    VTMaxUsed = 0
+    VTReleased = 0
+    VTLastHandle = 0
+End Sub
+
+Sub VTTerminate
+    'release all array buffers
+    VTReleaseAll
+    Erase VTStore
+    VTMaxUsed = -1 'ensure variant creation will fail until VT_INIT is called
+End Sub
+
+Function VTNewStr& (s As String)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_STR
+    VTStore(slotIx).strValue = s
+    VTNewStr = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewByte& (n As _Byte)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_BYT
+    VTStore(slotIx).intValue = n
+    VTNewByte = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewInt& (n As Integer)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_INT
+    VTStore(slotIx).intValue = n
+    VTNewInt = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewLng& (n As Long)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_LNG
+    VTStore(slotIx).intValue = n
+    VTNewLng = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewInt64& (n As _Integer64)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_INT64
+    VTStore(slotIx).intValue = n
+    VTNewInt64 = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewSng& (n As Single)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_SNG
+    VTStore(slotIx).sngValue = n
+    VTNewSng = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewDbl& (n As Double)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_DBL
+    VTStore(slotIx).dblValue = n
+    VTNewDbl = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewFlt& (n As _Float)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_FLT
+    VTStore(slotIx).fltValue = n
+    VTNewFlt = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewStringArray& (arr() As String)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_STRINGARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+
+    ReDim vhandlearr(LBound(arr) To UBound(arr)) As Long
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        vhandlearr(i) = VTNewStr(arr(i))
+    Next i
+
+    VTStore(slotIx).intValue = VTNewLongArray(vhandlearr())
+    VTNewStringArray = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewByteArray& (arr() As _Byte)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_BYTEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewByteArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewIntArray& (arr() As Integer)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_INTARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewIntArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewLongArray& (arr() As Long)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_LONGARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewLongArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewInt64Array& (arr() As _Integer64)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_INT64ARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewInt64Array = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewSingleArray& (arr() As Single)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_SINGLEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewSingleArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewDoubleArray& (arr() As Double)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_DOUBLEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewDoubleArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VTNewFloatArray& (arr() As _Float)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_FLOATARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewFloatArray = VTStore(slotIx).vHandle
+    _MemFree m
+End Function
+
+Function VariantNew&
+    VTLastHandle = VTLastHandle + 1
+    Dim vsIndex As Long
+    vsIndex = VTNextVStoreIndex
+    VTStore(vsIndex).vHandle = VTLastHandle
+    VTStore(vsIndex).vType = VT_NONE
+    VariantNew = vsIndex
+End Function
+
+Function VTStoreIndexOf& (vHandle As Long)
+    'TODO: consider sorting VStore by handle and using binary search
+    Dim i As Long
+    For i = 1 To VTMaxUsed
+        If VTStore(i).vHandle = vHandle Then
+            VTStoreIndexOf = i
+            Exit Function
+        End If
+    Next i
+    VTStoreIndexOf = -1
+End Function
+
+Function VTStr$ (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTStr = VTStore(vsIndex).strValue
+End Function
+
+Function VTByt% (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTByt = VTStore(vsIndex).intValue And &HFF
+End Function
+
+Function VTInt% (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTInt = VTStore(vsIndex).intValue And &HFFFF
+End Function
+
+Function VTLng& (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTLng = VTStore(vsIndex).intValue And &HFFFFFFFF
+End Function
+
+Function VTInt64&& (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTInt64 = VTStore(vsIndex).intValue
+End Function
+
+Function VTSng! (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTSng = VTStore(vsIndex).sngValue
+End Function
+
+Function VTDbl# (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTDbl = VTStore(vsIndex).dblValue
+End Function
+
+Function VTFlt## (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    VTFlt = VTStore(vsIndex).dblValue
+End Function
+
+Sub VTGetStringArrayAt (vsIndex As Long, arr() As String)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_STRINGARRAY, "Variant does not hold a string array"
+    ReDim arr(vHold.lbound To vHold.uBound) As String
+    ReDim vhandlearr(1 To 0) As Long
+    VTGetLongArray CInt64ToLong(vHold.intValue), vhandlearr()
+    Dim i As Long
+    For i = LBound(vhandlearr) To UBound(vhandlearr)
+        arr(i) = VTStr(vhandlearr(i))
+    Next i
+End Sub
+
+Sub VTGetStringArray (vHandle As Long, arr() As String)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetStringArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetByteArrayAt (vsIndex As Long, arr() As _Byte)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_INTARRAY, "Variant does not hold a _Byte array"
+    ReDim arr(vHold.lbound To vHold.uBound) As _Byte
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetByteArray (vHandle As Long, arr() As _Byte)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetByteArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetIntArrayAt (vsIndex As Long, arr() As Integer)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_INTARRAY, "Variant does not hold an Integer array"
+    ReDim arr(vHold.lbound To vHold.uBound) As Integer
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetIntArray (vHandle As Long, arr() As Integer)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetIntArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetLongArrayAt (vsIndex As Long, arr() As Long)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_LONGARRAY, "Variant does not hold a Long array"
+    ReDim arr(vHold.lbound To vHold.uBound) As Long
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetLongArray (vHandle As Long, arr() As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetLongArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetInt64ArrayAt (vsIndex As Long, arr() As _Integer64)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_INT64ARRAY, "Variant does not hold an _Integer64 array"
+    ReDim arr(vHold.lbound To vHold.uBound) As _Integer64
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetInt64Array (vHandle As Long, arr() As _Integer64)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetInt64ArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetSingleArrayAt (vsIndex As Long, arr() As Single)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_SINGLEARRAY, "Variant does not hold a Single array"
+    ReDim arr(vHold.lbound To vHold.uBound) As Single
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetSingleArray (vHandle As Long, arr() As Single)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetSingleArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetDoubleArrayAt (vsIndex As Long, arr() As Double)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_DOUBLEARRAY, "Variant does not hold a Double array"
+    ReDim arr(vHold.lbound To vHold.uBound) As Double
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetDoubleArray (vHandle As Long, arr() As Double)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetDoubleArrayAt vsIndex, arr()
+End Sub
+
+Sub VTGetFloatArrayAt (vsIndex As Long, arr() As _Float)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_FLOATARRAY, "Variant does not hold a _Float array"
+    ReDim arr(vHold.lbound To vHold.uBound) As _Float
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetFloatArray (vHandle As Long, arr() As _Float)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetFloatArrayAt vsIndex, arr()
+End Sub
+
+Function VTType$ (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTType = VTTypeAt(vsIndex)
+End Function
+
+Function VTTypeAt$ (nIndex As Long)
+    Select Case VTStore(nIndex).vType
+        Case VT_NONE
+            VTTypeAt = "(NULL)"
+        Case VT_STR
+            VTTypeAt = "STRING"
+        Case VT_BYT
+            VTTypeAt = "BYTE"
+        Case VT_INT
+            VTTypeAt = "INTEGER"
+        Case VT_LNG
+            VTTypeAt = "LONG"
+        Case VT_INT64
+            VTTypeAt = "INTEGER64"
+        Case VT_SNG
+            VTTypeAt = "SINGLE"
+        Case VT_DBL
+            VTTypeAt = "DOUBLE"
+        Case VT_FLT
+            VTTypeAt = "FLOAT"
+        Case VT_STRINGARRAY
+            VTTypeAt = "STRING ARRAY"
+        Case VT_BYTEARRAY
+            VTTypeAt = "BYTE ARRAY"
+        Case VT_INTARRAY
+            VTTypeAt = "INTEGER ARRAY"
+        Case VT_LONGARRAY
+            VTTypeAt = "LONG ARRAY"
+        Case VT_INT64ARRAY
+            VTTypeAt = "INTEGER64 ARRAY"
+        Case VT_SINGLEARRAY
+            VTTypeAt = "SINGLE ARRAY"
+        Case VT_DOUBLEARRAY
+            VTTypeAt = "DOUBLE ARRAY"
+        Case VT_FLOATARRAY
+            VTTypeAt = "FLOAT ARRAY"
+    End Select
+End Function
+
+Function VTToStrAt$ (nIndex As Long)
+    Dim s As String
+    Dim sep As String, i As Long
+    Select Case VTStore(nIndex).vType
+        Case VT_NONE
+            s = "(null variant)"
+        Case VT_STR
+            s = VTStore(nIndex).strValue
+        Case VT_BYT
+            s = Str$(CInt64ToByte(VTStore(nIndex).intValue))
+        Case VT_INT
+            s = Str$(CInt64ToInteger(VTStore(nIndex).intValue))
+        Case VT_LNG
+            s = Str$(CInt64ToLong(VTStore(nIndex).intValue))
+        Case VT_INT64
+            s = Str$(VTStore(nIndex).intValue)
+        Case VT_SNG
+            s = Str$(VTStore(nIndex).sngValue)
+        Case VT_DBL
+            s = Str$(VTStore(nIndex).dblValue)
+        Case VT_FLT
+            s = Str$(VTStore(nIndex).fltValue)
+
+        Case VT_STRINGARRAY
+            'ReDim vhandlearr(0 To 0) As Long
+            ReDim stringarr(0 To 0) As String
+            sep = "["
+            VTGetStringArrayAt nIndex, stringarr()
+            s = "String Array(" + Str$(LBound(stringarr)) + " to " + Str$(UBound(stringarr)) + ") = "
+            For i = LBound(stringarr) To UBound(stringarr)
+                If stringarr(i) <> "" Then
+                    s = s + sep + _CHR_QUOTE + stringarr(i) + _CHR_QUOTE
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonempty elements listed)"
+            'erase vhandlearr
+            Erase stringarr
+
+        Case VT_BYTEARRAY
+            ReDim bytearr(0 To 0) As _Byte
+            sep = "["
+            VTGetByteArrayAt nIndex, bytearr()
+            s = "Byte Array(" + Str$(LBound(bytearr)) + " to " + Str$(UBound(bytearr)) + ") = "
+            For i = LBound(bytearr) To UBound(bytearr)
+                If bytearr(i) <> 0 Then
+                    s = s + sep + Str$(bytearr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase bytearr
+
+        Case VT_INTARRAY
+            ReDim intarr(0 To 0) As Integer
+            sep = "["
+            VTGetIntArrayAt nIndex, intarr()
+            s = "Integer Array(" + Str$(LBound(intarr)) + " to " + Str$(UBound(intarr)) + ") = "
+            For i = LBound(intarr) To UBound(intarr)
+                If intarr(i) <> 0 Then
+                    s = s + sep + Str$(intarr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase intarr
+
+        Case VT_LONGARRAY
+            ReDim longarr(0 To 0) As Long
+            sep = "["
+            VTGetLongArrayAt nIndex, longarr()
+            s = "Long Array(" + Str$(LBound(longarr)) + " to " + Str$(UBound(longarr)) + ") = "
+            For i = LBound(longarr) To UBound(longarr)
+                If longarr(i) <> 0 Then
+                    s = s + sep + Str$(longarr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase longarr
+
+        Case VT_INT64ARRAY
+            ReDim int64arr(0 To 0) As _Integer64
+            sep = "["
+            VTGetInt64ArrayAt nIndex, int64arr()
+            s = "_Integer64 Array(" + Str$(LBound(int64arr)) + " to " + Str$(UBound(int64arr)) + ") = "
+            For i = LBound(int64arr) To UBound(int64arr)
+                If int64arr(i) <> 0 Then
+                    s = s + sep + Str$(int64arr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase int64arr
+
+        Case VT_SINGLEARRAY
+            ReDim singlearr(0 To 0) As Single
+            sep = "["
+            VTGetSingleArrayAt nIndex, singlearr()
+            s = "Single Array(" + Str$(LBound(singlearr)) + " to " + Str$(UBound(singlearr)) + ") = "
+            For i = LBound(singlearr) To UBound(singlearr)
+                If singlearr(i) <> 0 Then
+                    s = s + sep + Str$(singlearr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase singlearr
+        Case VT_DOUBLEARRAY
+            ReDim doublearr(0 To 0) As Double
+            sep = "["
+            VTGetDoubleArrayAt nIndex, doublearr()
+            s = "Double Array(" + Str$(LBound(doublearr)) + " to " + Str$(UBound(doublearr)) + ") = "
+            For i = LBound(doublearr) To UBound(doublearr)
+                If doublearr(i) <> 0 Then
+                    s = s + sep + Str$(doublearr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase doublearr
+        Case VT_FLOATARRAY
+            ReDim floatarr(0 To 0) As _Float
+            sep = "["
+            VTGetFloatArrayAt nIndex, floatarr()
+            s = "_Float Array(" + Str$(LBound(floatarr)) + " to " + Str$(UBound(floatarr)) + ") = "
+            For i = LBound(floatarr) To UBound(floatarr)
+                If floatarr(i) <> 0 Then
+                    s = s + sep + Str$(floatarr(i))
+                    sep = ","
+                End If
+            Next i
+            s = s + "] (nonzero elements listed)"
+            Erase floatarr
+    End Select
+    VTToStrAt = s
+End Function
+
+Function CInt64ToByte%% (n As _Integer64)
+    CInt64ToByte = n And &HFF
+End Function
+
+Function CInt64ToInteger% (n As _Integer64)
+    CInt64ToInteger = n And &HFFFF
+End Function
+
+Function CInt64ToLong& (n As _Integer64)
+    CInt64ToLong = n And &HFFFFFFFF
+End Function
+
+Function VTToStr$ (vHandle As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTToStr = VTToStrAt(vsIndex)
+End Function
+
+Sub VTRelease (vHandle As Long)
+    If vHandle = 0 Then Exit Sub
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTReleaseAt vsIndex, _TRUE
+End Sub
+
+Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
+    If VTStore(vsIndex).vHandle = 0 Then Exit Sub
+    'release dependencies from array variant types
+    If VTStore(vsIndex).vType = VT_STRINGARRAY Then
+        Dim i As Long
+        ReDim longarray(1 To 0) As Long
+        VTGetLongArray CInt64ToLong(VTStore(vsIndex).intValue), longarray()
+        For i = LBound(longarray) To UBound(longarray)
+            VTRelease longarray(i)
+        Next i
+    End If
+
+    If VTStore(vsIndex).vType = VT_BYTEARRAY Or _
+       VTStore(vsIndex).vType = VT_INTARRAY Or _
+       VTStore(vsIndex).vType = VT_LONGARRAY Or _
+       VTStore(vsIndex).vType = VT_INT64ARRAY Or _
+       VTStore(vsIndex).vType = VT_SINGLEARRAY Or _
+       VTStore(vsIndex).vType = VT_DOUBLEARRAY Or _
+       VTStore(vsIndex).vType = VT_FLOATARRAY Then
+        _MemFree VTStore(vsIndex).arrayMemCopy
+    ElseIf VTStore(vsIndex).vType = VT_STRINGARRAY Then
+        'unlike other array subtypes, stringarray does not keep a _MEM image;
+        'instead it allocates a word array using an internal variant (handle in intvalue)
+        VTRelease CInt64ToLong(VTStore(vsIndex).intValue)
+    End If
+
+    VTStore(vsIndex).vHandle = 0
+    VTStore(vsIndex).vType = VT_NONE
+    VTStore(vsIndex).strValue = ""
+    VTReleased = VTReleased + 1
+    Dim ub As Long
+    ub = UBound(VTStore)
+    If autoCompact _AndAlso ub > 10 _AndAlso VTMaxUsed - VTReleased < ub * 0.4 Then
+        VTCompact ub \ 2
+    End If
+End Sub
+
+Sub VTReleaseAll
+    Dim i As Long
+    For i = 1 To VTMaxUsed
+        VTReleaseAt i, _FALSE
+    Next i
+
+    ReDim VTStore(1 To 10) As VTHolderStruct
+    VTMaxUsed = 0
+    VTReleased = 0
+End Sub
+
+Sub VTCompact (newUB As Long)
+    _Assert newUB > 10 And newUB * 0.8 > VTMaxUsed - VTReleased, "VTCompact upper bound too low."
+    Dim As Long i, j, newmax
+    If VTReleased > 0 Then
+        j = 2
+        For i = 1 To VTMaxUsed
+            If VTStore(i).vHandle = 0 Then
+                If j <= i Then j = i + 1
+                Do While VTStore(j).vHandle = 0 And j < VTMaxUsed
+                    j = j + 1
+                Loop
+                If j <= VTMaxUsed Then
+                    VTStore(i) = VTStore(j)
+                    VTStore(j).vHandle = 0
+                    VTStore(j).vType = VT_NONE
+                    VTStore(j).strValue = ""
+                    If VTStore(i).vHandle > 0 Then newmax = i
+                End If
+            Else
+                newmax = i
+            End If
+        Next i
+        VTMaxUsed = newmax
+        VTReleased = 0
+    End If
+    ReDim _Preserve VTStore(1 To newUB) As VTHolderStruct
+End Sub
+
+Sub VTDump
+    Dim i As Long
+    Print "Variant Store"
+    Print String$(80, Chr$(196))
+    For i = 1 To VTMaxUsed
+        If VTStore(i).vHandle <> 0 Then
+            Print Using "####  \          \ &"; i; VTTypeAt(i); VTToStrAt(i)
+        End If
+    Next i
+    Print String$(80, Chr$(205))
+    Print "Total:"; UBound(VTStore); " VTStore elements,"; VTReleased; " released, max used ="; VTMaxUsed
+    Print
+End Sub
+
+Function VTNextVStoreIndex&
+    If VTReleased > 0 Then
+        VTNextVStoreIndex = VTStoreIndexOf(0)
+        VTReleased = VTReleased - 1
+        Exit Function
+    End If
+    Do While VTMaxUsed >= UBound(VTStore)
+        ReDim _Preserve VTStore(1 To 2 * UBound(VTStore)) As VTHolderStruct
+        'Print "REDIM PRESERVE VTStore up to "; 2 * UBound(VTStore)
+    Loop
+    VTMaxUsed = VTMaxUsed + 1
+    VTNextVStoreIndex = VTMaxUsed
+End Function

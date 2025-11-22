@@ -1,0 +1,753 @@
+'$Debug
+'list.bm - list library
+'Create and use lists of Strings, Longs, and Doubles
+'Much like arrays, but with automatic redim to adjust capacity
+
+''$Asserts
+''Option _Explicit
+''$Include: 'list.bi'
+''$Include: 'variant.bi'
+
+Sub LstInit
+    ReDim LstStore(1 To 10) As LstHolderStruct
+    LstMaxUsed = 0
+    LstReleased = 0
+End Sub
+
+Sub LstTerminate
+    LstReleaseAll
+End Sub
+
+''' free the list from memory, invalidating lstHandle
+Sub LstRelease (lstHandle As Long)
+    If lstHandle = 0 Then Exit Sub
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lstHandle)
+    _Assert lstIndex > 0, "List handle not found"
+    If lstIndex = 0 Then Exit Sub
+    LstReleaseAt lstIndex, _TRUE
+End Sub
+
+''' free the list from memory, invalidating lstHandle
+Sub LstReleaseAt (lstIndex As Long, autoCompact As _Byte)
+    Dim lst As LstHolderStruct
+    lst = LstStore(lstIndex)
+    _Assert lst.listType <> LST_NONE, "Invalid list type"
+    If lst.listHandle = 0 Or lst.listType = LST_NONE Then Exit Sub
+    Select Case LstStore(lstIndex).listType
+        Case LST_STRING
+            Dim i As Long
+            Dim m As _MEM, elem As Long
+            m = _Mem(elem)
+            For i = 1 To LstStore(lstIndex).listLength
+                _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + _SIZE_OF_LONG * (i - 1), _SIZE_OF_LONG To m, m.OFFSET
+                VTRelease elem
+            Next i
+            _MemFree m
+            _MemFree LstStore(lstIndex).listMeM
+        Case LST_LONG
+            _MemFree LstStore(lstIndex).listMeM
+        Case LST_DOUBLE
+            _MemFree LstStore(lstIndex).listMeM
+    End Select
+    LstStore(lstIndex).listHandle = 0
+    LstStore(lstIndex).listName = ""
+    LstStore(lstIndex).listType = LST_NONE
+    LstReleased = LstReleased + 1
+    If autoCompact _AndAlso LstStore(lstIndex).listAlloc > 10 _AndAlso LstMaxUsed - LstReleased < LstStore(lstIndex).listAlloc * 0.4 Then
+        LstCompact LstStore(lstIndex).listAlloc
+    End If
+End Sub
+
+Sub LstReleaseAll
+    Dim i As Long
+    For i = 1 To LstMaxUsed
+        LstReleaseAt (i), _FALSE
+    Next i
+    ReDim LstStore(1 To 10) As LstHolderStruct
+    LstMaxUsed = 0
+    LstReleased = 0
+End Sub
+
+Function LstStoreIndexOf& (lstHandle As Long)
+    'TODO: consider sorting LstStore by handle and using binary search
+    Dim As Long i, rslt
+    rslt = -1
+    For i = 1 To LstMaxUsed
+        If LstStore(i).listHandle = lstHandle Then
+            _Assert LstStore(i).listType <> LST_NONE, "Invalid list type"
+            rslt = i
+            Exit For
+        End If
+    Next i
+    LstStoreIndexOf = rslt
+End Function
+
+Function LstNewStr&
+    Dim lstIndex As Long
+    lstIndex = LstCreate(LST_STRING, 10, 1.0, _SIZE_OF_LONG) 'each string is saved as a long variant handle
+    _Assert lstIndex > 0, "List creation failed"
+    LstNewStr = LstStore(lstIndex).listHandle
+End Function
+
+Function LstNewLng&
+    Dim lstIndex As Long
+    lstIndex = LstCreate(LST_LONG, 10, 1.0, _SIZE_OF_LONG)
+    _Assert lstIndex > 0, "List creation failed"
+    LstNewLng = LstStore(lstIndex).listHandle
+End Function
+
+Function LstNewDbl&
+    Dim lstIndex As Long
+    lstIndex = LstCreate(LST_DOUBLE, 10, 1.0, _SIZE_OF_DOUBLE)
+    _Assert lstIndex > 0, "List creation failed"
+    LstNewDbl = LstStore(lstIndex).listHandle
+End Function
+
+Function LstCreate (listType As _Byte, initialSize As Long, growth As Single, elementSize As _Byte)
+    lstLastHandle = lstLastHandle + 1
+    Dim lstIndex As Long
+    lstIndex = LstNextStoreIndex
+    LstStore(lstIndex).listHandle = lstLastHandle
+    LstStore(lstIndex).listType = listType
+    LstStore(lstIndex).listAlloc = initialSize 'array elements
+    LstStore(lstIndex).listGrowth = growth 'grow 100% when full
+    LstStore(lstIndex).listLength = 0
+    Dim m As _MEM
+    m = _MemNew(LstStore(lstIndex).listAlloc * elementSize)
+    LstStore(lstIndex).listMeM = m
+    LstCreate = lstIndex
+End Function
+
+Function LstNextStoreIndex&
+    Dim rslt As Long
+    If LstReleased > 0 Then
+        rslt = LstStoreIndexOf(0)
+        _Assert rslt > 0, "Internal error, released list handle search failed."
+        LstReleased = LstReleased - 1
+    Else
+        Do While LstMaxUsed >= UBound(LstStore)
+            ReDim _Preserve LstStore(1 To 2 * UBound(LstStore)) As LstHolderStruct
+        Loop
+        LstMaxUsed = LstMaxUsed + 1
+        rslt = LstMaxUsed
+    End If
+    LstNextStoreIndex = rslt
+End Function
+
+Sub LstAddStr (lHandle As Long, s As String)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstAddStrAt lstIndex, s
+End Sub
+
+Sub LstAddLng (lHandle As Long, n As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstAddLngAt lstIndex, n
+End Sub
+
+Sub LstAddDbl (lHandle As Long, n As Double)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstAddDblAt lstIndex, n
+End Sub
+
+Sub LstAddStrAt (lstIndex As Long, s As String)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'poke in new value at end
+    Dim m As _MEM
+    Dim strvar As Long
+    strvar = VTNewStr(s)
+    m = _Mem(strvar)
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + LstStore(lstIndex).listLength * _SIZE_OF_LONG
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Sub LstAddLngAt (lstIndex As Long, n As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'poke in new value at end
+    Dim m As _MEM
+    m = _Mem(n)
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + LstStore(lstIndex).listLength * _SIZE_OF_LONG
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Sub LstAddDblAt (lstIndex As Long, n As Double)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'poke in new value at end
+    Dim m As _MEM
+    m = _Mem(n)
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + LstStore(lstIndex).listLength * _SIZE_OF_DOUBLE
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Sub LstGrowAt (lstIndex As Long)
+    Dim As Long grow
+    grow = _Ceil(LstStore(lstIndex).listAlloc * LstStore(lstIndex).listGrowth)
+    If grow < 1 Then grow = 1
+    Dim m As _MEM
+    Dim elemSize As _Byte
+    Select Case LstStore(lstIndex).listType
+        Case LST_STRING
+            elemSize = _SIZE_OF_LONG
+        Case LST_LONG
+            elemSize = _SIZE_OF_LONG
+        Case LST_DOUBLE
+            elemSize = _SIZE_OF_DOUBLE
+    End Select
+    m = _MemNew((LstStore(lstIndex).listAlloc + grow) * elemSize)
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET, LstStore(lstIndex).listLength * elemSize To m, m.OFFSET
+    _MemFree LstStore(lstIndex).listMeM
+    LstStore(lstIndex).listMeM = m
+    LstStore(lstIndex).listAlloc = LstStore(lstIndex).listAlloc + grow
+End Sub
+
+Sub LstDeleteStr (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstDeleteStrAt lstIndex, position, _TRUE
+End Sub
+
+Sub LstDeleteLng (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstDeleteLngAt lstIndex, position, _TRUE
+End Sub
+
+Sub LstDeleteDbl (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstDeleteDblAt lstIndex, position, _TRUE
+End Sub
+
+Sub LstDeleteStrAt (lstIndex As Long, position As Long, autoCompact As _Byte)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub
+    ReDim lvars(1 To LstStore(lstIndex).listAlloc) As Long
+    Dim m As _MEM
+    m = _Mem(lvars())
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET, LstStore(lstIndex).listLength * _SIZE_OF_LONG To m, m.OFFSET
+    VTRelease lvars(position)
+    Dim i As Long
+    For i = position To LstStore(lstIndex).listLength - 1
+        lvars(i) = lvars(i + 1)
+    Next i
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength - 1
+    _MemCopy m, m.OFFSET, m.SIZE - _SIZE_OF_LONG To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+
+    If autoCompact Then
+        Dim newalloc As Long
+        newalloc = LstStore(lstIndex).listAlloc
+        Do While LstStore(lstIndex).listLength / (newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8
+            newalloc = _Ceil((newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8)
+        Loop
+        If newalloc < 10 Then newalloc = 10
+        If LstStore(lstIndex).listAlloc <> newalloc Then
+            _MemFree LstStore(lstIndex).listMeM
+            LstStore(lstIndex).listMeM = _MemNew(newalloc * _SIZE_OF_LONG)
+        End If
+        _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+    End If
+    _memfree m
+End Sub
+
+Sub LstDeleteLngAt (lstIndex As Long, position As Long, autoCompact As _Byte)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub
+    ReDim lvars(1 To LstStore(lstIndex).listAlloc) As Long
+    Dim m As _MEM
+    m = _Mem(lvars())
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET, LstStore(lstIndex).listLength * _SIZE_OF_LONG To m, m.OFFSET
+    Dim i As Long
+    For i = position To LstStore(lstIndex).listLength - 1
+        lvars(i) = lvars(i + 1)
+    Next i
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength - 1
+    _MemCopy m, m.OFFSET, m.SIZE - _SIZE_OF_LONG To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+
+    If autoCompact Then
+        Dim newalloc As Long
+        newalloc = LstStore(lstIndex).listAlloc
+        Do While LstStore(lstIndex).listLength / (newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8
+            newalloc = _Ceil((newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8)
+        Loop
+        If newalloc < 10 Then newalloc = 10
+        If LstStore(lstIndex).listAlloc <> newalloc Then
+            _MemFree LstStore(lstIndex).listMeM
+            LstStore(lstIndex).listMeM = _MemNew(newalloc * _SIZE_OF_LONG)
+        End If
+        _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+    End If
+    _memfree m
+End Sub
+
+Sub LstDeleteDblAt (lstIndex As Long, position As Long, autoCompact As _Byte)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub
+    ReDim lvars(1 To LstStore(lstIndex).listAlloc) As Long
+    Dim m As _MEM
+    m = _Mem(lvars())
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET, LstStore(lstIndex).listLength * _SIZE_OF_DOUBLE To m, m.OFFSET
+    Dim i As Long
+    For i = position To LstStore(lstIndex).listLength - 1
+        lvars(i) = lvars(i + 1)
+    Next i
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength - 1
+    _MemCopy m, m.OFFSET, m.SIZE - _SIZE_OF_DOUBLE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+
+    If autoCompact Then
+        Dim newalloc As Long
+        newalloc = LstStore(lstIndex).listAlloc
+        Do While LstStore(lstIndex).listLength / (newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8
+            newalloc = _Ceil((newalloc / (1 + LstStore(lstIndex).listGrowth)) < 0.8)
+        Loop
+        If newalloc < 10 Then newalloc = 10
+        If LstStore(lstIndex).listAlloc <> newalloc Then
+            _MemFree LstStore(lstIndex).listMeM
+            LstStore(lstIndex).listMeM = _MemNew(newalloc * _SIZE_OF_DOUBLE)
+        End If
+        _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
+    End If
+    _memfree m
+End Sub
+
+Sub LstChangeStr (lHandle As Long, position As Long, newValue As String)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstChangeStrAt lstIndex, position, newValue
+End Sub
+
+Sub LstChangeLng (lHandle As Long, position As Long, newValue As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstChangeLngAt lstIndex, position, newValue
+End Sub
+
+Sub LstChangeSbl (lHandle As Long, position As Long, newValue As Double)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstChangeLngAt lstIndex, position, newValue
+End Sub
+
+Sub LstChangeStrAt (lstIndex As Long, position As Long, newValue As String)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub 'position does not exist
+    Dim strvar As Long, m As _MEM
+    m = _Mem(strvar)
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG, _SIZE_OF_LONG To m, m.OFFSET
+    VTRelease (strvar)
+    strvar = VTNewStr(newValue)
+    _MemCopy m, m.OFFSET, _SIZE_OF_LONG To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG
+    _MemFree m
+End Sub
+
+Sub LstChangeLngAt (lstIndex As Long, position As Long, newValue As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub 'position does not exist
+    Dim m As _MEM
+    m = _Mem(newValue)
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG
+    _MemFree m
+End Sub
+
+Sub LstChangeDblAt (lstIndex As Long, position As Long, newValue As Double)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then Exit Sub 'position does not exist
+    Dim m As _MEM
+    m = _Mem(newValue)
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_DOUBLE
+    _MemFree m
+End Sub
+
+Sub LstInsertStr (lHandle As Long, position As Long, s As String)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstInsertStrAt lstIndex, position, s
+End Sub
+
+Sub LstInsertLng (lHandle As Long, position As Long, n As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstInsertLngAt lstIndex, position, n
+End Sub
+
+Sub LstInsertDbl (lHandle As Long, position As Long, n As Double)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstInsertDblAt lstIndex, position, n
+End Sub
+
+Sub LstInsertStrAt (lstIndex As Long, position As Long, s As String)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'insert new value at position
+    Dim m As _MEM
+    Dim As Long strvar, lLen
+    lLen = LstStore(lstIndex).listLength
+    strvar = VTNewStr(s)
+    ReDim tail(position To lLen + 1) As Long
+    tail(position) = strvar
+    m = _Mem(tail())
+    _memcopy lststore(lstIndex).listmem,lststore(lstIndex).listmem.offset + (position-1) * _size_of_long, _
+             (lLen - position + 1) * _size_of_long to m,m.offset + _size_of_long
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Sub LstInsertLngAt (lstIndex As Long, position As Long, n As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'insert new value at position
+    Dim m As _MEM
+    Dim As Long lLen
+    lLen = LstStore(lstIndex).listLength
+    ReDim tail(position To lLen + 1) As Long
+    tail(position) = n
+    m = _Mem(tail())
+    _memcopy lststore(lstIndex).listmem,lststore(lstIndex).listmem.offset + (position-1) * _size_of_long, _
+             (lLen - position + 1) * _size_of_long to m,m.offset + _size_of_long
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Sub LstInsertDblAt (lstIndex As Long, position As Long, n As Double)
+    _Assert lstIndex > 0, "List handle not found"
+    'grow list if needed
+    If LstStore(lstIndex).listLength + 1 > LstStore(lstIndex).listAlloc Then
+        LstGrowAt (lstIndex)
+    End If
+    'insert new value at position
+    Dim m As _MEM
+    Dim lLen As Long
+    lLen = LstStore(lstIndex).listLength
+    ReDim tail(position To lLen + 1) As Double
+    tail(position) = n
+    m = _Mem(tail())
+    _memcopy lststore(lstIndex).listmem,lststore(lstIndex).listmem.offset + (position-1) * _size_of_double, _
+             (lLen - position + 1) * _size_of_double to m,m.offset + _size_of_double
+    _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_DOUBLE
+    _MemFree m
+    'update list properties
+    LstStore(lstIndex).listLength = LstStore(lstIndex).listLength + 1
+End Sub
+
+Function LstStrAt$ (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstStrAt = LstStrAtAtIndex(lstIndex, position)
+End Function
+
+Function LstLngAt& (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstLngAt = LstLngAtAtIndex(lstIndex, position)
+End Function
+
+Function LstDblAt# (lHandle As Long, position As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstDblAt = LstDblAtAtIndex(lstIndex, position)
+End Function
+
+Function LstStrAtAtIndex$ (lstIndex As Long, position As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then
+        LstStrAtAtIndex = ""
+        Exit Function
+    End If
+    Dim strvar As Long
+    Dim m As _MEM
+    m = _Mem(strvar)
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG, _SIZE_OF_LONG To m, m.OFFSET
+    _MemFree m
+    LstStrAtAtIndex = VTStr(strvar)
+End Function
+
+Function LstLngAtAtIndex& (lstIndex As Long, position As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then
+        LstLngAtAtIndex = 0&
+        Exit Function
+    End If
+    Dim lngvar As Long
+    Dim m As _MEM
+    m = _Mem(lngvar)
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG, _SIZE_OF_LONG To m, m.OFFSET
+    _MemFree m
+    LstLngAtAtIndex = lngvar
+End Function
+
+Function LstDblAtAtIndex# (lstIndex As Long, position As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    If position < 1 Or position > LstStore(lstIndex).listLength Then
+        LstDblAtAtIndex = 0.0#
+        Exit Function
+    End If
+    Dim dblvar As Double
+    Dim m As _MEM
+    m = _Mem(dblvar)
+    _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_DOUBLE, _SIZE_OF_DOUBLE To m, m.OFFSET
+    _MemFree m
+    LstDblAtAtIndex = dblvar
+End Function
+
+Function LstCount& (lHandle As Long)
+    _Assert lHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lHandle)
+    LstCount = LstCountAt(lstIndex)
+End Function
+
+Function LstCountAt& (lstIndex As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    LstCountAt = LstStore(lstIndex).listLength
+End Function
+
+
+''' Redimension list store if <40% full (due to element deletions)
+Sub LstCompact (newUB As Long) 'size in Long elements
+    _Assert newUB > 10 And newUB * 0.8 > LstMaxUsed - LstReleased, "LstCompact upper bound too low."
+    Dim As Long i, j, newmax
+    If LstReleased > 0 Then
+        j = 2
+        For i = 1 To LstMaxUsed
+            If LstStore(i).listHandle = 0 Then
+                If j <= i Then j = i + 1
+                Do While LstStore(j).listHandle = 0 And j < LstMaxUsed
+                    j = j + 1
+                Loop
+                If j <= LstMaxUsed Then
+                    LstStore(i) = LstStore(j)
+                    LstStore(j).listHandle = 0
+                    LstStore(j).listType = LST_NONE
+                    LstStore(j).listName = ""
+                    If LstStore(i).listHandle > 0 Then newmax = i
+                End If
+            Else
+                newmax = i
+            End If
+        Next i
+        LstMaxUsed = newmax
+        LstReleased = 0
+    End If
+    ReDim _Preserve LstStore(1 To newUB) As LstHolderStruct
+End Sub
+
+''' Return a string representation of the list, such as:  ListOfString["apples", "oranges"] or ListOfLong[1,2,4,8]
+Function LstToStr$ (lstHandle As Long)
+    _Assert lstHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lstHandle)
+    LstToStr = LstToStrAt(lstIndex)
+End Function
+
+Function LstToStrAt$ (lstIndex As Long)
+    Dim rslt As String
+    _Assert lstIndex > 0, "List handle not found"
+    Dim lst As LstHolderStruct
+    Dim i As Long, sep As String
+    lst = LstStore(lstIndex)
+    Select Case lst.listType
+        Case LST_STRING
+            rslt = "String List"
+            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
+            sep = "["
+            For i = 1 To lst.listLength
+                rslt = rslt + sep + _CHR_QUOTE + LstStrAtAtIndex(lstIndex, i) + _CHR_QUOTE
+                sep = ", "
+            Next i
+            rslt = rslt + "]"
+        Case LST_LONG
+            rslt = "Long List"
+            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
+            sep = "["
+            For i = 1 To lst.listLength
+                rslt = rslt + sep + Str$(LstLngAtAtIndex(lstIndex, i))
+                sep = ", "
+            Next i
+            rslt = rslt + "]"
+        Case LST_DOUBLE
+            rslt = "Double List"
+            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
+            sep = "["
+            For i = 1 To lst.listLength
+                rslt = rslt + sep + Str$(LstDblAtAtIndex(lstIndex, i))
+                sep = ", "
+            Next i
+            rslt = rslt + "]"
+    End Select
+    LstToStrAt = rslt
+End Function
+
+Sub LstDump
+    Dim i As Long
+    Dim listCount As Long
+    Print "List Store"
+    listCount = 0
+    Print String$(80, Chr$(196))
+    For i = 1 To LstMaxUsed
+        Select Case LstStore(i).listType
+            Case LST_STRING
+                Print i; " "; LstToStrAt(i)
+                listCount = listCount + 1
+            Case LST_LONG
+                Print i; " "; LstToStrAt(i)
+                listCount = listCount + 1
+            Case LST_DOUBLE
+                Print i; " "; LstToStrAt(i)
+                listCount = listCount + 1
+        End Select
+    Next i
+    Print String$(80, Chr$(205))
+    Print String$(50," "); listCount; " list(s)."
+    Print
+End Sub
+
+Sub LstSetName (lstHandle As Long, newName As String)
+    _Assert lstHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lstHandle)
+    LstSetNameAt lstIndex, newName
+End Sub
+
+Sub LstSetNameAt (lstIndex As Long, newName As String)
+    _Assert lstIndex > 0, "List handle not found"
+    LstStore(lstIndex).listName = newName
+End Sub
+
+Function lstGetName$ (lstHandle As Long)
+    _Assert lstHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lstHandle)
+    lstGetName = lstGetNameAt(lstIndex)
+End Function
+
+Function lstGetNameAt$ (lstIndex As Long)
+    _Assert lstIndex > 0, "List handle not found"
+    lstGetNameAt = LstStore(lstIndex).listName
+End Function
+
+Sub LstSort (lstHandle As Long, ascending As _Byte)
+    _Assert lstHandle > 0, "Invalid list handle arguement"
+    Dim lstIndex As Long
+    lstIndex = LstStoreIndexOf(lstHandle)
+    LstSortAt lstIndex, ascending
+End Sub
+
+Sub LstSortAt (lstIndex As Long, ascending As _Byte)
+    _Assert lstIndex > 0, "List handle not found"
+    Dim lLen As Long
+    lLen = LstStore(lstIndex).listLength
+    Dim m As _MEM
+    Dim As Long i, j
+
+    Select Case LstStore(lstIndex).listType
+        Case LST_STRING
+            ReDim aStrs(1 To lLen) As String
+            ReDim aVars(1 To lLen) As Long
+            m = _Mem(aVars())
+        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+            To m, m.offset
+            For i = 1 To lLen
+                aStrs(i) = VTStr(aVars(i))
+            Next i
+            For i = 1 To lLen - 1
+                For j = i + 1 To lLen
+                    If (aStrs(i) < aStrs(j)) Xor (ascending <> 0) Then
+                        Swap aStrs(i), aStrs(j)
+                        Swap aVars(i), aVars(j)
+                    End If
+                Next j
+            Next i
+        _memcopy m, m.offset, m.size TO _
+            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+            _MemFree m
+        Case LST_LONG
+            ReDim aLngs(1 To lLen) As Long
+            m = _Mem(aLngs())
+        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+            To m, m.offset
+            For i = 1 To lLen - 1
+                For j = i + 1 To lLen
+                    If (aLngs(i) < aLngs(j)) Xor (ascending <> 0) Then
+                        Swap aLngs(i), aLngs(j)
+                    End If
+                Next j
+            Next i
+        _memcopy m, m.offset, m.size TO _
+            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+            _MemFree m
+        Case LST_DOUBLE
+            ReDim aDbls(1 To lLen) As Double
+            m = _Mem(aDbls())
+        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+            To m, m.offset
+            For i = 1 To lLen - 1
+                For j = i + 1 To lLen
+                    If (aDbls(i) < aDbls(j)) Xor (ascending <> 0) Then
+                        Swap aDbls(i), aDbls(j)
+                    End If
+                Next j
+            Next i
+        _memcopy m, m.offset, m.size TO _
+            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+            _MemFree m
+    End Select
+
+End Sub
+
+Function LstStrIn&(lstHandle As Long, srch as string)
+    dim As Long i, lLen, lstIndex
+    lstIndex = LstStoreIndexOf(lstHandle)
+    llen = LstCountAt(lstIndex)
+    for i = i to lLen
+        if lstStrAtAtIndex(lstIndex, i) = srch Then
+            LstStrIn = i
+            exit for
+        end if
+    next i
+end function

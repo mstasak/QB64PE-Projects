@@ -1,0 +1,107 @@
+$Debug
+'MarqueeModel.bm
+
+'Constants, Variables, Types, Subs and Functions for accessing data in a SQLite 3 database
+
+Sub mmLoadList
+    mmOpenDb
+    DB_QUERY ("SELECT id, title, description, item_type FROM marquee_items WHERE item_type = '" + mmItemType + "' ORDER BY title")
+    Dim As Long nRows, i
+    nRows = UBound(DB_Result, 2) 'DB_Result_Count
+    ReDim As MMRow mmList(1 To nRows)
+    For i = 1 To nRows
+        mmList(i).id = Val(DB_Result(1, i).value, Long)
+        mmList(i).title = DB_Result(2, i).value
+        mmList(i).description = DB_Result(3, i).value
+        mmList(i).itemType = DB_Result(4, i).value
+        'mmList(i).hidden = Val(DB_Result(0, i).value, Long)
+    Next i
+    mmCloseDb
+End Sub
+
+Sub mmSaveList (itemType As String)
+    mmOpenDb
+    DB_QUERY ("DELETE FROM marquee_items WHERE item_type ='" + itemType + "'")
+    Dim As Integer i, nRows
+    nRows = ubound(mmList)
+
+    For i = 1 To nRows
+        'argh! need a better db_query with parameter value binding - double-quote in input values will corrupt query (not to mention sql injection attacks)
+        'could just write a sanitize function to convert " to \", "", ' or whatever
+        'note - just deleting old list for itemtype, then inserting new list; allowing new id values to be autoassigned
+        DB_QUERY ("INSERT INTO marquee_items(" + _
+        "title, description, item_type" + _
+         ") VALUES (" + _
+         dbsanitize(mmList(i).title) + "','" + dbsanitize(mmList(i).description) + "','" + dbsanitize(mmList(i).itemType) + "'" + _
+         ")")
+    Next i
+    mmCloseDb
+    mmLoadList 'refresh mmList with new IDs, possible reordering
+End Sub
+
+Function replace$ (s As String, target As String, replacement As String)
+    Dim rslt As String
+    rslt = ""
+    Do While s <> ""
+        If Left$(s, 1) = target Then
+        Else
+            rslt = replacement
+        End If
+        s = Mid$(s, 2)
+    Loop
+    replace = rslt
+End Function
+
+Function dbSanitize$ (s As String)
+    dbSanitize = replace$(s, "'", "\'")
+End Function
+
+Sub mmCreateDbIfNotExists
+    mmOpenDb
+    'TODO: test if marquee_items exists; create if missing and populate if empty
+    Dim rslt As Long
+    rslt = DB_QUERY("select count(*) from marquee_items")
+    print "query to test db existence", rslt
+    If rslt <> SQLITE_OK Then 'presumably SQLITE_NOTFOUND = 12
+        rslt = db_query("CREATE TABLE IF NOT EXISTS marquee_items (" + _
+        "id INTEGER PRIMARY KEY," + _
+        "title TEXT," + _
+        "description TEXT," + _
+        "item_type TEXT" + _
+        ")")
+    print "create table marquee_items", rslt
+        print rslt
+        mmPopulateDbWithSampleData
+    End If
+    mmCloseDb
+End Sub
+
+Sub mmPopulateDbWithSampleData
+    Dim As Integer rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('TV','Watch news','" + mmItemType + "')")
+    print "sample data inserts", rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('Return books','to library','" + mmItemType + "')")
+    print rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('Get the mail','from box','" + mmItemType + "')")
+    print rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('Write some computer code','using BASIC','" + mmItemType + "')")
+    print rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('Scratch','that itch','" + mmItemType + "')")
+    print rslt
+    rslt = DB_QUERY ("insert into marquee_items(title,description,item_type) values ('Wash clothes','use washing machine and dryer','" + mmItemType + "')")
+    print rslt
+End Sub
+
+Sub mmOpenDb
+    DB_Open mmDatabaseName
+End Sub
+
+Sub mmCloseDb
+    DB_Close 'closes handle hSqlite inside sqlite3.bi
+End Sub
+
+'Function mmListCount&
+    'mmListCount = UBound(mmList)
+'End Function
+
+

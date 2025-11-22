@@ -1,0 +1,126 @@
+Option _Explicit
+'$Include:'SQLite3Decls.bi'
+' $NOPREFIX
+' $Console:Only
+' $EXEICON:'databases.ico'
+' ICON
+ 
+ 
+' _Title "SQLite Test"
+ 
+'DIM AS STRING db: db = "test.db"
+'IF DB_Open(db) THEN
+'    DIM AS STRING conTitle: conTitle = "SQLite Test - " + db: CONSOLETITLE conTitle
+'    IF DB_QUERY("SELECT * FROM test") = SQLITE_OK THEN
+'        DIM AS LONG column, row
+'        FOR row = 1 TO UBOUND(DB_Result, 2)
+'            PRINT "Row"; row
+'            FOR column = 1 TO UBOUND(DB_Result, 1)
+'                PRINT , GetDataType(DB_Result(column, row).TYPE), DB_Result(column, row).columnName, DB_Result(column, row).value
+'            NEXT
+'        NEXT
+'    END IF
+'    'If DB_QUERY("INSERT INTO test(column2) VALUES ('And now, a fifth row!');") = SQLITE_OK Then
+'    '    Print DB_AffectedRows
+'    'End If
+'    'If DB_QUERY("UPDATE test SET column2 = 'And now, a fourth row!' WHERE column1 = '4';") = SQLITE_OK Then
+'    '    Print DB_AffectedRows
+'    'End If
+'END IF
+'
+'DB_Close
+
+Sub DB_QUERY_PARAMETERS_CLEAR
+End Sub
+
+Sub DB_QUERY_PARAMETERS_ADD (paramName As String, paramType As String, paramValue As String)
+End Sub
+ 
+Function DB_Open%% (sqlitedb As String)
+    If sqlite3_open(sqlitedb, _Offset(hSqlite)) = SQLITE_OK Then DB_Open = _TRUE Else DB_Open = _FALSE
+End Function
+ 
+Sub DB_Open (sqlitedb As String)
+    sqlite3_open sqlitedb, _Offset(hSqlite)
+End Sub
+ 
+Sub DB_QUERY (sql_command As String)
+    If sqlite3_prepare(hSqlite, sql_command, Len(sql_command), _Offset(hStmt), 0) = SQLITE_OK Then
+        Dim As Long colCount: colCount = sqlite3_column_count(hStmt)
+        Dim As Long column, ret
+        ret = sqlite3_step(hStmt)
+        DB_Result_Count = 0
+        ReDim _Preserve As SQLITE_FIELD DB_Result(colCount, DB_Result_Count)
+        If ret = SQLITE_ROW Then
+            Do
+                DB_Result_Count = DB_Result_Count + 1
+                For column = 0 To colCount - 1
+                    ReDim _Preserve As SQLITE_FIELD DB_Result(colCount, DB_Result_Count)
+                    DB_Result(column + 1, DB_Result_Count).TYPE = sqlite3_column_type(hStmt, column)
+                    DB_Result(column + 1, DB_Result_Count).columnName = sqlite3_column_name(hStmt, column)
+                    DB_Result(column + 1, DB_Result_Count).value = sqlite3_column_text(hStmt, column)
+                Next
+                ret = sqlite3_step(hStmt)
+            Loop While ret = SQLITE_ROW
+        Else
+            'do some error catching
+        End If
+        sqlite3_finalize hStmt
+    End If
+End Sub
+ 
+Function DB_QUERY& (sql_command As String)
+    Dim rslt As Long
+    rslt = sqlite3_prepare(hSqlite, sql_command, Len(sql_command), _Offset(hStmt), 0)
+    If rslt = SQLITE_OK Then
+        Dim As Long colCount: colCount = sqlite3_column_count(hStmt)
+        Dim As Long column, ret
+        DB_Result_Count = 0
+        ReDim _Preserve As SQLITE_FIELD DB_Result(colCount, DB_Result_Count)
+        ret = sqlite3_step(hStmt)
+        If ret = SQLITE_ROW Then
+            DB_QUERY = SQLITE_OK
+            Do
+                DB_Result_Count = DB_Result_Count + 1
+                For column = 0 To colCount - 1
+                    ReDim _Preserve As SQLITE_FIELD DB_Result(colCount, DB_Result_Count)
+                    DB_Result(column + 1, DB_Result_Count).TYPE = sqlite3_column_type(hStmt, column)
+                    DB_Result(column + 1, DB_Result_Count).columnName = sqlite3_column_name(hStmt, column)
+                    DB_Result(column + 1, DB_Result_Count).value = sqlite3_column_text(hStmt, column)
+                Next
+                ret = sqlite3_step(hStmt)
+            Loop While ret = SQLITE_ROW
+        ElseIf ret = SQLITE_DONE Then DB_QUERY = SQLITE_OK
+        Else
+            DB_QUERY = ret 'SQLITE_ERROR
+            'do some error catching
+        End If
+        sqlite3_finalize hStmt
+    Else
+        DB_QUERY = rslt
+    End If
+End Function
+ 
+Function DB_AffectedRows&
+    DB_AffectedRows = sqlite3_changes(hSqlite)
+End Function
+ 
+Function GetDataType$ (dataType As Long)
+    Select Case dataType
+        Case SQLITE_INTEGER
+            GetDataType = "INTEGER"
+        Case SQLITE_FLOAT
+            GetDataType = "FLOAT"
+        Case SQLITE_BLOB
+            GetDataType = "BLOB"
+        Case SQLITE_NULL
+            GetDataType = "NULL"
+        Case SQLITE_TEXT
+            GetDataType = "TEXT"
+    End Select
+End Function
+ 
+Sub DB_Close
+    sqlite3_close hSqlite
+End Sub
+
