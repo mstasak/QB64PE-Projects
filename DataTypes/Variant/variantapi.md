@@ -151,3 +151,5 @@ Only one-dimension arrays are supported.
 - Implement optional variant names (VTHolderStruct addition, with access methods mimicing a dictionary keyed by name, holding variant handles: `VTFind(name)`, `VTSetName(vHandle, name)`)
 - Rename internals VT_INTERNAL_xxx to help prevent accidental use
 - Check for publicly visible symbols not beginning with VT (or VT_).
+- Add parameter to VTDump to limit output length
+- Add sub VTDumpStatus (maybe even with total memory usage?   A bit complicated)

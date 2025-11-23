@@ -36,5 +36,5 @@ Type VTHolderStruct
     fltValue As _Float
 End Type
 
-ReDim Shared VTStore(1 To 10) As VTHolderStruct
+ReDim Shared VTStore(1& To 10&) As VTHolderStruct
 Dim Shared As Long VTMaxUsed, VTReleased, VTLastHandle

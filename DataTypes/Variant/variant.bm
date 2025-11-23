@@ -4,11 +4,14 @@
 'Implement a Variant system in QB64 PE 4.2.0
 
 ''Option _Explicit
+$LET VT_USE_BIN_SEARCH = -1
+$IF
+
 ''$Include: 'variant.bi'
 
 Sub VTInit
     'VTTerminate may have been called, so re-initialize everything
-    ReDim VTStore(1 To 10) As VTHolderStruct
+    ReDim VTStore(1& To 10&) As VTHolderStruct
     VTMaxUsed = 0
     VTReleased = 0
     VTLastHandle = 0
@@ -700,7 +703,7 @@ Sub VTReleaseAll
         VTReleaseAt i, _FALSE
     Next i
 
-    ReDim VTStore(1 To 10) As VTHolderStruct
+    ReDim VTStore(1& To 10&) As VTHolderStruct
     VTMaxUsed = 0
     VTReleased = 0
 End Sub
@@ -730,14 +733,14 @@ Sub VTCompact (newUB As Long)
         VTMaxUsed = newmax
         VTReleased = 0
     End If
-    ReDim _Preserve VTStore(1 To newUB) As VTHolderStruct
+    ReDim _Preserve VTStore(1& To newUB) As VTHolderStruct
 End Sub
 
 Sub VTDump
     Dim i As Long
     Print "Variant Store"
     Print String$(80, Chr$(196))
-    For i = 1 To VTMaxUsed
+    For i = 1& To VTMaxUsed
         If VTStore(i).vHandle <> 0 Then
             Print Using "####  \          \ &"; i; VTTypeAt(i); VTToStrAt(i)
         End If
