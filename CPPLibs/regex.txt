@@ -1,0 +1,11 @@
+C++ Regex Lib reference:
+https://en.cppreference.com/w/cpp/regex.html
+
+Use regex_search to return up to specified amounts of match and submatch
+info.
+
+g:
+cd \qb64src
+grep -i -r --include=*.c --include=*.cpp "#include \<regex\>"
+- no files match filespec - silly .txt files in internal\source? IDK
+

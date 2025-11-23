@@ -19,6 +19,56 @@ int16_t RegexMatch(const char *qbStr, const char *qbRegex) {
     return result;
 }
 
+int16_t RegexSearch(const char* qbStr, const char* qbRegex,
+    int32_t flags, int32_t resultWordLen, uintptr_t results0) {
+    //int32_t *results, int32_t resultWordLen) {
+    int32_t *results = (int32_t *)results0;
+    auto reflags = (std::regex_constants::syntax_option_type)flags;
+    //auto reflags = std::regex_constantsicase;
+    //results[2] = 700;
+    results[3] = flags;// + ((int32_t)flags)?100:1;
+    //if (resultWordLen < 2) return -3;
+    //if (resultWordLen % 2 != 0) return -3;
+    int16_t rslt = 0; //1 if success, 0 if nomatch, <0 = errorcode
+    int16_t outCounter = 0;
+    try {
+        std::string text(qbStr);
+        std::regex re(qbRegex,reflags);
+        std::smatch match; // smatch is an alias for match_results<string::const_iterator>
+
+        // Perform the regex search
+        if (std::regex_search(text, match, re)) {
+            int i = 0;
+            for (auto it = match.cbegin(); it != match.cend(); ++it) {
+                //std::cout << "Sub-match: " << *it << '\n';
+                if (outCounter+2 > resultWordLen) break;
+                results[outCounter++] = match.position(i);
+                results[outCounter++] = match.length(i);
+                i++;
+            }
+            // Access specific capture groups
+            //if (match.size() > 1) {
+            //    std::cout << "Captured hex value: " << match[1] << '\n';
+            //}
+            if (outCounter<resultWordLen) {
+                results[outCounter] = -1; //save end of submatches marker, if there is room
+            }
+            rslt = 1;
+        }
+        else {
+            rslt = 0;
+        }
+
+    }
+    catch (const std::regex_error& e) {
+        rslt = ~e.code();
+    }
+    return rslt;
+}
+    
+//Function RegexReplace& (source$, target$, replacement$, replaceAll%)
+
+
 // Return a detailed error description message for any negative error code,
 // which might be returned by the RegexMatch() function.
 //  In: error code (INTEGER, usually the code returned by RegexMatch())
@@ -43,6 +93,8 @@ const char *RegexError(int16_t errCode) {
         case std::regex_constants::error_badrepeat: {return "RegEx has a repeat specifier, one of *?+{, that was not preceded by a valid token."; break;}
         case std::regex_constants::error_complexity: {return "Complexity of an attempted match exceeded a pre-set level."; break;}
         case std::regex_constants::error_stack: {return "Out of memory while trying to match the specified string."; break;}
+        case -3: {return "Invalid call argument."; break;}
+        //case -4: {return ""; break;}
         // everything else is unknown
         default: {return "Unknown RegEx error."; break;}
     }
