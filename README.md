@@ -15,4 +15,4 @@ Potentially useful:
 - CPPLibs/qbregex* - a call interface (Declare Lib) allowing user to use C++
   std::regex_search option, with ignore case flag and basic, extended, and 
   EcmaScript regex flavors allowed.  Built on RhoSigma's 
-  [regex_match interface](https://qb64phoenix.com/forum/showthread.php?tid=1889).  (match tests if an entire spring matches a regular expression; search finds an instance of a substring matching the regular expression.)
+  [regex_match interface](https://qb64phoenix.com/forum/showthread.php?tid=1889).  (match tests if an entire string matches a regular expression; search finds an instance of a substring matching the regular expression.)
