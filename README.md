@@ -1,7 +1,7 @@
 # QB64PE Projects
 
 A collection of small QuickBasic64 Phoenix Edition programs and subs/functions,
-for some for entertainment, and some useful in other projects.
+some for entertainment, and some useful in other projects.
 
 Potentially useful: 
 - DataTypes/variant* - a data type which is a holder for other data types,
