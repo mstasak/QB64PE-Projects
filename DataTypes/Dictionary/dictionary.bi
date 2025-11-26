@@ -3,12 +3,9 @@ Option _Explicit
 'dictionary.bi
 'create and use key-value dictionaries
 'keys may be long or string
-'values may be long or string (long can contain a variant, to store other types)
+'values may be long or string (any long can contain a variant handle, to store other types)
 
-'ReDim strDictStore(1 To 5, 1 To 10) As String 'array(dictnum, key#, val#)
-'ReDim intDictStore(1 To 5, 1 To 10) As Integer
-'ReDim lngDictStore(1 To 5, 1 To 10) As Long
-'ReDim sngDictStore(1 To 5, 1 To 10) As Single
+'Documentation TBD.  Look at dictionarytest.bas for typical usage scenarios.
 
 Const DICT_NONE = 0
 Const DICT_KSTR_VSTR = 1

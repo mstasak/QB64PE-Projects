@@ -22,4 +22,4 @@ Potentially useful:
   EcmaScript regex flavors allowed.  Built on RhoSigma's 
   [regex_match interface](https://qb64phoenix.com/forum/showthread.php?tid=1889).  (match tests if an entire string matches a regular expression; search finds an instance of a substring matching the regular expression.) 
   
-  **Bugs found** - flags are working unreliably, either parameter passing to C++ is flawed or the casts to std::regex_constants::syntax_option_type isn't working - weirdness, working on it...
+  **Bugs found** - flags are working unreliably, either parameter passing to C++ is flawed or the casts to std::regex_constants::syntax_option_type isn't working - weirdness, working on it... **Fixed**
