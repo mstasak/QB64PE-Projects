@@ -75,8 +75,8 @@ Sub OldTests
     Print
 
     s = "negative (pi minus three) = -.141592654E+00" + Chr$(0)
-re = "(([\+-]?)([0-9]+)(\.[0-9]*)([eE][\+-]?[0-9]+)?)|" + _
-     "(([\+-]?)([0-9]*)(\.[0-9]+)([eE][\+-]?[0-9]+)?)" + Chr$(0)
+    re = "(([\+-]?)([0-9]+)(\.[0-9]*)([eE][\+-]?[0-9]+)?)|" + _
+         "(([\+-]?)([0-9]*)(\.[0-9]+)([eE][\+-]?[0-9]+)?)" + Chr$(0)
     ReDim buffr(0 To 29) As Long
     flags = REGEX_ECMAScript
     res = RegexSearch%(s, re, flags, UBound(buffr) - LBound(buffr) + 1, _Offset(buffr(0))) 'case-sensitive match

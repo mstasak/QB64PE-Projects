@@ -73,9 +73,8 @@ int16_t RegexSearch(const char* qbStr, const char* qbRegex,
     int16_t rslt = 0; //1 if success, 0 if nomatch, <0 = errorcode
     int16_t outCounter = 0;
     try {
-        auto decoded_flags = (std::regex_constants::syntax_option_type)flags;
         std::string text(qbStr);
-        std::regex re(qbRegex,decoded_flags);
+        std::regex re(qbRegex, (std::regex_constants::syntax_option_type)flags);
         std::smatch match; // smatch is an alias for match_results<string::const_iterator>
 
         // Perform the regex search
