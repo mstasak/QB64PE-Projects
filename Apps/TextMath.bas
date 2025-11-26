@@ -6,6 +6,9 @@ Dim As String a, b
 a = "98"
 b = "17"
 
+Print "a = " + a
+Print "b = " + b
+Print
 Print "a + b = " + sum(a, b)
 Print "a - b = " + difference(a, b)
 Print "a * b = " + product(a, b)
@@ -20,10 +23,9 @@ Function sum$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = aval
-    While Len(bval) > 0
-        result = result + "@"
-        bval = Mid$(bval, 2)
-    Wend
+    If Len(bval) > 0 Then
+        result = result + String$(Len(bval), "@")
+    End If
     sum = unitToStr(result)
 End Function
 
@@ -31,8 +33,12 @@ Function difference$ (a As String, b As String)
     Dim As String aval, bval, result
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
-    result = Mid$(aval, Len(bval))
-    result = Mid$(result, 2)
+    If Len(bval) > 0 Then
+        result = Mid$(aval, Len(bval))
+        result = Mid$(result, 2)
+    Else
+        result = aval
+    End If
     difference = unitToStr(result)
 End Function
 
@@ -54,12 +60,14 @@ Function quotient$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = ""
-    While Len(aval) > Len(bval)
-        result = result + "@"
-        For i = 1 To Len(bval)
-            aval = Mid$(aval, 2)
-        Next i
-    Wend
+    If Len(bval) > 0 Then
+        While Len(aval) > Len(bval)
+            result = result + "@"
+            For i = 1 To Len(bval)
+                aval = Mid$(aval, 2)
+            Next i
+        Wend
+    End If
     quotient = unitToStr(result)
 End Function
 
@@ -69,12 +77,14 @@ Function modulo$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = ""
-    While Len(aval) > Len(bval)
-        result = result + "@"
-        For i = 1 To Len(bval)
-            aval = Mid$(aval, 2)
-        Next i
-    Wend
+    If Len(bval) > 0 Then
+        While Len(aval) > Len(bval)
+            result = result + "@"
+            For i = 1 To Len(bval)
+                aval = Mid$(aval, 2)
+            Next i
+        Wend
+    End If
     modulo = unitToStr(aval)
 End Function
 
