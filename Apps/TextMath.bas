@@ -83,7 +83,11 @@ Function StrToUnitStr$ (s0 As String)
     s = s0
     rslt = ""
     Do
+<<<<<<< HEAD
         rslt = MultiplyString$("IIIIIIIIII", rslt)
+=======
+        If Len(rslt) > 0 Then rslt = MultiplyString$("IIIIIIIIII", rslt)
+>>>>>>> f56380e3b25e77b5114d1be1ebf9b354a1ea0a85
         rslt = rslt + Mid$(String$(Asc(s, 1), "@"), 49)
         s = Mid$(s, 2)
     Loop While s <> ""
