@@ -6,11 +6,11 @@ Dim As String a, b
 a = "98"
 b = "17"
 
-Print "a + b = (expect:   115) " + unitToStr(sum(a, b))
-Print "a - b = (expect: 79???) " + unitToStr(difference(a, b))
-Print "a * b = (expect:  1666) " + unitToStr(product(a, b))
-Print "a / b = (expect:     5) " + unitToStr(quotient(a, b))
-Print "a % b = (expect:    13) " + unitToStr(modulo(a, b))
+Print "a + b = " + sum(a, b)
+Print "a - b = " + difference(a, b)
+Print "a * b = " + product(a, b)
+Print "a / b = " + quotient(a, b)
+Print "a % b = " + modulo(a, b)
 
 
 ', and create the sum, difference, product, quotient, and remainder  ("117", "79", "1666", "5", and "13")."
@@ -24,7 +24,7 @@ Function sum$ (a As String, b As String)
         result = result + "@"
         bval = Mid$(bval, 2)
     Wend
-    sum = result
+    sum = unitToStr(result)
 End Function
 
 Function difference$ (a As String, b As String)
@@ -33,7 +33,7 @@ Function difference$ (a As String, b As String)
     bval = StrToUnitStr(b)
     result = Mid$(aval, Len(bval))
     result = Mid$(result, 2)
-    difference = result
+    difference = unitToStr(result)
 End Function
 
 Function product$ (a As String, b As String)
@@ -45,7 +45,7 @@ Function product$ (a As String, b As String)
         result = result + String$(Len(aval), "@")
         bval = Mid$(bval, 2)
     Wend
-    product = result
+    product = unitToStr(result)
 End Function
 
 Function quotient$ (a As String, b As String)
@@ -60,7 +60,7 @@ Function quotient$ (a As String, b As String)
             aval = Mid$(aval, 2)
         Next i
     Wend
-    quotient = result
+    quotient = unitToStr(result)
 End Function
 
 Function modulo$ (a As String, b As String)
@@ -75,7 +75,7 @@ Function modulo$ (a As String, b As String)
             aval = Mid$(aval, 2)
         Next i
     Wend
-    modulo = aval
+    modulo = unitToStr(aval)
 End Function
 
 Function StrToUnitStr$ (s0 As String)
@@ -83,11 +83,7 @@ Function StrToUnitStr$ (s0 As String)
     s = s0
     rslt = ""
     Do
-<<<<<<< HEAD
         rslt = MultiplyString$("IIIIIIIIII", rslt)
-=======
-        If Len(rslt) > 0 Then rslt = MultiplyString$("IIIIIIIIII", rslt)
->>>>>>> f56380e3b25e77b5114d1be1ebf9b354a1ea0a85
         rslt = rslt + Mid$(String$(Asc(s, 1), "@"), 49)
         s = Mid$(s, 2)
     Loop While s <> ""
