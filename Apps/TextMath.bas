@@ -6,11 +6,14 @@ Dim As String a, b
 a = "98"
 b = "17"
 
-Print "a + b = (expect:   115) " + unitToStr(sum(a, b))
-Print "a - b = (expect: 79???) " + unitToStr(difference(a, b))
-Print "a * b = (expect:  1666) " + unitToStr(product(a, b))
-Print "a / b = (expect:     5) " + unitToStr(quotient(a, b))
-Print "a % b = (expect:    13) " + unitToStr(modulo(a, b))
+Print "a = " + a
+Print "b = " + b
+Print
+Print "a + b = " + sum(a, b)
+Print "a - b = " + difference(a, b)
+Print "a * b = " + product(a, b)
+Print "a / b = " + quotient(a, b)
+Print "a % b = " + modulo(a, b)
 
 
 ', and create the sum, difference, product, quotient, and remainder  ("117", "79", "1666", "5", and "13")."
@@ -20,20 +23,23 @@ Function sum$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = aval
-    While Len(bval) > 0
-        result = result + "@"
-        bval = Mid$(bval, 2)
-    Wend
-    sum = result
+    If Len(bval) > 0 Then
+        result = result + String$(Len(bval), "@")
+    End If
+    sum = unitToStr(result)
 End Function
 
 Function difference$ (a As String, b As String)
     Dim As String aval, bval, result
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
-    result = Mid$(aval, Len(bval))
-    result = Mid$(result, 2)
-    difference = result
+    If Len(bval) > 0 Then
+        result = Mid$(aval, Len(bval))
+        result = Mid$(result, 2)
+    Else
+        result = aval
+    End If
+    difference = unitToStr(result)
 End Function
 
 Function product$ (a As String, b As String)
@@ -45,7 +51,7 @@ Function product$ (a As String, b As String)
         result = result + String$(Len(aval), "@")
         bval = Mid$(bval, 2)
     Wend
-    product = result
+    product = unitToStr(result)
 End Function
 
 Function quotient$ (a As String, b As String)
@@ -54,13 +60,15 @@ Function quotient$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = ""
-    While Len(aval) > Len(bval)
-        result = result + "@"
-        For i = 1 To Len(bval)
-            aval = Mid$(aval, 2)
-        Next i
-    Wend
-    quotient = result
+    If Len(bval) > 0 Then
+        While Len(aval) > Len(bval)
+            result = result + "@"
+            For i = 1 To Len(bval)
+                aval = Mid$(aval, 2)
+            Next i
+        Wend
+    End If
+    quotient = unitToStr(result)
 End Function
 
 Function modulo$ (a As String, b As String)
@@ -69,13 +77,15 @@ Function modulo$ (a As String, b As String)
     aval = StrToUnitStr(a)
     bval = StrToUnitStr(b)
     result = ""
-    While Len(aval) > Len(bval)
-        result = result + "@"
-        For i = 1 To Len(bval)
-            aval = Mid$(aval, 2)
-        Next i
-    Wend
-    modulo = aval
+    If Len(bval) > 0 Then
+        While Len(aval) > Len(bval)
+            result = result + "@"
+            For i = 1 To Len(bval)
+                aval = Mid$(aval, 2)
+            Next i
+        Wend
+    End If
+    modulo = unitToStr(aval)
 End Function
 
 Function StrToUnitStr$ (s0 As String)
