@@ -19,6 +19,13 @@ int16_t RegexMatch(const char *qbStr, const char *qbRegex) {
     return result;
 }
 
+int16_t RegexMatchEx(const char *qbStr, const char *qbRegex, int32_t flags) {
+    int16_t result;
+    try {result = regex_match(qbStr, std::regex(qbRegex, (std::regex_constants::syntax_option_type)flags));}
+    catch (const std::regex_error& e) {result = ~e.code();}
+    return result;
+}
+
 /* QB64 usage:
 '$INCLUDE: 'qbregex.bi'
 
@@ -66,8 +73,9 @@ int16_t RegexSearch(const char* qbStr, const char* qbRegex,
     int16_t rslt = 0; //1 if success, 0 if nomatch, <0 = errorcode
     int16_t outCounter = 0;
     try {
+        auto decoded_flags = (std::regex_constants::syntax_option_type)flags;
         std::string text(qbStr);
-        std::regex re(qbRegex,(std::regex_constants::syntax_option_type)flags);
+        std::regex re(qbRegex,decoded_flags);
         std::smatch match; // smatch is an alias for match_results<string::const_iterator>
 
         // Perform the regex search
@@ -86,8 +94,7 @@ int16_t RegexSearch(const char* qbStr, const char* qbRegex,
         } else {
             rslt = 0;
         }
-    }
-    catch (const std::regex_error& e) {
+    } catch (const std::regex_error& e) {
         rslt = ~e.code();
     }
     return rslt;
