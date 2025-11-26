@@ -4,14 +4,19 @@ A collection of small QuickBasic64 Phoenix Edition programs and subs/functions,
 some for entertainment, and some useful in other projects.
 
 Potentially useful: 
+
 - DataTypes/variant* - a data type which is a holder for other data types,
   useful for something like making an array of mixed types in order, say
   to pass a list of parameter values to a sql prepare-bind-execute procedure.
+
 - DataTypes/list* - lists of Longs (or Strings or Doubles, but not intermixed
   in a single list), with insert, delete sort capabilities.
+
 - DataTypes/dictionary* - dictionaries (maps), which are lists of key:value
   pairs enabling keyed lookup.  Keys may be Strings or Longs.  Values may
-  be Strings, Longs, or Doubles.
+  be Strings, Longs, or Doubles.  A rework is in progress to use binary searching to look up
+  varient handles for better fetch speed (but slower adds/deletes).
+
 - CPPLibs/qbregex* - a call interface (Declare Lib) allowing user to use C++
   std::regex_search option, with ignore case flag and basic, extended, and 
   EcmaScript regex flavors allowed.  Built on RhoSigma's 
