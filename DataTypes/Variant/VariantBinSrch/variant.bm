@@ -222,6 +222,198 @@ Function VTNewFloatArray& (arr() As _Float)
     _MemFree m
 End Function
 
+sub VTSetByte (vHandle as Long, n As _Byte)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_BYT
+    VTStore(slotIx).intValue = n
+End sub
+
+Sub VTSetInt (vHandle as Long, n As Integer)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_INT
+    VTStore(slotIx).intValue = n
+End sub
+
+Sub VTSetLng (vHandle as Long, n As Long)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_LNG
+    VTStore(slotIx).intValue = n
+End sub
+
+Sub VTSetInt64 (vHandle as Long, n As _Integer64)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_INT64
+    VTStore(slotIx).intValue = n
+End sub
+
+Sub VTSetSng (vHandle as Long, n As Single)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_SNG
+    VTStore(slotIx).sngValue = n
+End sub
+
+Sub VTSetDbl (vHandle as Long, n As Double)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_DBL
+    VTStore(slotIx).dblValue = n
+End sub
+
+Sub VTSetFlt (vHandle as Long, n As _Float)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_FLT
+    VTStore(slotIx).fltValue = n
+End sub
+
+sub VTSetStringArray (vHandle as Long, arr() As String)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_STRINGARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+
+    ReDim vhandlearr(LBound(arr) To UBound(arr)) As Long
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        vhandlearr(i) = VTNewStr(arr(i))
+    Next i
+    VTStore(slotIx).intValue = VTNewLongArray(vhandlearr())
+End Sub
+
+Sub VTSetByteArray (vHandle as Long, arr() As _Byte)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_BYTEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetIntArray (vHandle as Long, arr() As Integer)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_INTARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetLongArray (vHandle as Long, arr() As Long)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_LONGARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetInt64Array (vHandle as Long, arr() As _Integer64)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_INT64ARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetSingleArray (vHandle as Long, arr() As Single)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_SINGLEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetDoubleArray (vHandle as Long, arr() As Double)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_DOUBLEARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
+Sub VTSetFloatArray (vHandle as Long, arr() As _Float)
+    Dim slotIx As Long
+    slotIx = VTStoreIndexOf(vHandle)
+    _Assert slotIx > 0, "Variant lookup failed"
+    VTReleaseResourcesAt slotIx
+    VTStore(slotIx).vType = VT_FLOATARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    _MemFree m
+End Sub
+
 Function VariantNew&
     Dim As Long newHandle, newIndex: newIndex = 0: newHandle = 0
     '1. Check for a released slot we can reuse
@@ -743,28 +935,7 @@ Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
     $If VT_USE_BIN_SEARCH = 0 Then
         If VTStore(vsIndex).vHandle = 0 Then Exit Sub
     $End If
-    'release dependencies from array variant types
-    If VTStore(vsIndex).vType = VT_STRINGARRAY Then
-        ReDim longarray(1 To 0) As Long
-        VTGetLongArray CInt64ToLong(VTStore(vsIndex).intValue), longarray()
-        For i = LBound(longarray) To UBound(longarray)
-            VTRelease longarray(i)
-        Next i
-    End If
-
-    If VTStore(vsIndex).vType = VT_BYTEARRAY Or _
-       VTStore(vsIndex).vType = VT_INTARRAY Or _
-       VTStore(vsIndex).vType = VT_LONGARRAY Or _
-       VTStore(vsIndex).vType = VT_INT64ARRAY Or _
-       VTStore(vsIndex).vType = VT_SINGLEARRAY Or _
-       VTStore(vsIndex).vType = VT_DOUBLEARRAY Or _
-       VTStore(vsIndex).vType = VT_FLOATARRAY Then
-        _MemFree VTStore(vsIndex).arrayMemCopy
-    ElseIf VTStore(vsIndex).vType = VT_STRINGARRAY Then
-        'unlike other array subtypes, stringarray does not keep a _MEM image;
-        'instead it allocates a word array using an internal variant (handle in intvalue)
-        VTRelease CInt64ToLong(VTStore(vsIndex).intValue)
-    End If
+    VTReleaseResourcesAt vsIndex
 
     Dim ub As Long
     ub = UBound(VTStore)
@@ -790,6 +961,35 @@ Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
         End If
     $End If
 End Sub
+
+Sub VTReleaseResourcesAt(vsIndex as long)
+    'release dependencies from array variant types
+    'this preserves the handle, so it can be reused for a new value and possibly type
+    If VTStore(vsIndex).vType = VT_STRINGARRAY Then
+        Dim i As Long
+        ReDim longarray(1 To 0) As Long
+        VTGetLongArray CInt64ToLong(VTStore(vsIndex).intValue), longarray()
+        For i = LBound(longarray) To UBound(longarray)
+            VTRelease longarray(i)
+        Next i
+    End If
+
+    If VTStore(vsIndex).vType = VT_BYTEARRAY Or _
+       VTStore(vsIndex).vType = VT_INTARRAY Or _
+       VTStore(vsIndex).vType = VT_LONGARRAY Or _
+       VTStore(vsIndex).vType = VT_INT64ARRAY Or _
+       VTStore(vsIndex).vType = VT_SINGLEARRAY Or _
+       VTStore(vsIndex).vType = VT_DOUBLEARRAY Or _
+       VTStore(vsIndex).vType = VT_FLOATARRAY Then
+        _MemFree VTStore(vsIndex).arrayMemCopy
+    ElseIf VTStore(vsIndex).vType = VT_STRINGARRAY Then
+        'unlike other array subtypes, stringarray does not keep a _MEM image;
+        'instead it allocates a word array using an internal variant (handle in intvalue)
+        VTRelease CInt64ToLong(VTStore(vsIndex).intValue)
+    End If
+    VTStore(vsIndex).vType = VT_NONE
+
+end sub
 
 Sub VTReleaseAll
     Dim i As Long
@@ -857,3 +1057,4 @@ Sub VTDump
     $End If
     Print
 End Sub
+

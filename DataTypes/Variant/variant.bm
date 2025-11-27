@@ -1,25 +1,21 @@
-'$Debug
 'variant.bm
-
 'Implement a Variant system in QB64 PE 4.2.0
 
-''Option _Explicit
-$Let VT_USE_BIN_SEARCH = -1
-
-
-''$Include: 'variant.bi'
+'$Include: 'variant.bi'
 
 Sub VTInit
     'VTTerminate may have been called, so re-initialize everything
     ReDim VTStore(1& To 10&) As VTHolderStruct
     VTMaxUsed = 0
-    VTReleased = 0
+    $If VT_USE_BIN_SEARCH = 0 Then
+        VTReleased = 0 'when binsearch enabled, released VT_STORE entries are moved above VTMaxUsed, keeping active variants contiguous
+    $End If
     VTLastHandle = 0
 End Sub
 
 Sub VTTerminate
     'release all array buffers
-    VTReleaseAll
+    VTReleaseAll 'some variants need to release their value (arrays)
     Erase VTStore
     VTMaxUsed = -1 'ensure variant creation will fail until VT_INIT is called
 End Sub
@@ -27,7 +23,7 @@ End Sub
 Function VTNewStr& (s As String)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_STR
     VTStore(slotIx).strValue = s
     VTNewStr = VTStore(slotIx).vHandle
@@ -36,7 +32,7 @@ End Function
 Function VTNewByte& (n As _Byte)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_BYT
     VTStore(slotIx).intValue = n
     VTNewByte = VTStore(slotIx).vHandle
@@ -45,7 +41,7 @@ End Function
 Function VTNewInt& (n As Integer)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_INT
     VTStore(slotIx).intValue = n
     VTNewInt = VTStore(slotIx).vHandle
@@ -54,7 +50,7 @@ End Function
 Function VTNewLng& (n As Long)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_LNG
     VTStore(slotIx).intValue = n
     VTNewLng = VTStore(slotIx).vHandle
@@ -63,7 +59,7 @@ End Function
 Function VTNewInt64& (n As _Integer64)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_INT64
     VTStore(slotIx).intValue = n
     VTNewInt64 = VTStore(slotIx).vHandle
@@ -72,7 +68,7 @@ End Function
 Function VTNewSng& (n As Single)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_SNG
     VTStore(slotIx).sngValue = n
     VTNewSng = VTStore(slotIx).vHandle
@@ -81,7 +77,7 @@ End Function
 Function VTNewDbl& (n As Double)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_DBL
     VTStore(slotIx).dblValue = n
     VTNewDbl = VTStore(slotIx).vHandle
@@ -90,7 +86,7 @@ End Function
 Function VTNewFlt& (n As _Float)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_FLT
     VTStore(slotIx).fltValue = n
     VTNewFlt = VTStore(slotIx).vHandle
@@ -99,7 +95,7 @@ End Function
 Function VTNewStringArray& (arr() As String)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_STRINGARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -117,7 +113,7 @@ End Function
 Function VTNewByteArray& (arr() As _Byte)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_BYTEARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -133,7 +129,7 @@ End Function
 Function VTNewIntArray& (arr() As Integer)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_INTARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -149,7 +145,7 @@ End Function
 Function VTNewLongArray& (arr() As Long)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_LONGARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -165,7 +161,7 @@ End Function
 Function VTNewInt64Array& (arr() As _Integer64)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_INT64ARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -181,7 +177,7 @@ End Function
 Function VTNewSingleArray& (arr() As Single)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_SINGLEARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -197,7 +193,7 @@ End Function
 Function VTNewDoubleArray& (arr() As Double)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_DOUBLEARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -213,7 +209,7 @@ End Function
 Function VTNewFloatArray& (arr() As _Float)
     Dim slotIx As Long
     slotIx = VariantNew
-    _Assert slotIx > 0, "Variant creation failed"
+    _Assert slotIx <> 0, "Variant creation failed"
     VTStore(slotIx).vType = VT_FLOATARRAY
     VTStore(slotIx).lbound = LBound(arr)
     VTStore(slotIx).uBound = UBound(arr)
@@ -419,16 +415,81 @@ Sub VTSetFloatArray (vHandle as Long, arr() As _Float)
 End Sub
 
 Function VariantNew&
-    VTLastHandle = VTLastHandle + 1
-    Dim vsIndex As Long
-    vsIndex = VTNextVStoreIndex
-    VTStore(vsIndex).vHandle = VTLastHandle
-    VTStore(vsIndex).vType = VT_NONE
-    VariantNew = vsIndex
+    Dim As Long newHandle, newIndex: newIndex = 0: newHandle = 0
+    '1. Check for a released slot we can reuse
+    Dim needed As _Byte: needed = 1
+    $If VT_USE_BIN_SEARCH = 0 Then
+        'binsearch maintains contiguous group with no 0 handles
+        If VTReleased > 0 Then
+            newIndex = VTStoreIndexOf(0)
+            VTReleased = VTReleased - 1
+            needed = 0
+        End If
+    $End If
+    '2. Expand VTStore if full
+    If VTMaxUsed + needed >= UBound(VTStore) Then
+        ReDim _Preserve VTStore(1 To 2 * UBound(VTStore)) As VTHolderStruct
+    End If
+    '3. Find or make a fresh/empty VTStore index and handle
+    If newIndex = 0 Then
+        If VTLastHandle <> -1 Then
+            '3.1 just append to end of array
+            newHandle = VTLastHandle + 1
+            VTLastHandle = newHandle
+            newIndex = VTMaxUsed + 1
+            VTMaxUsed = newIndex
+        ElseIf VTStore(VTMaxUsed).vHandle <> -1 Then
+            '3.2 adjust VTLastHandle and append at end of array
+            'This indicates VTLastHandle was not properly reduced when last
+            'used VTStore element was released at some point
+            newHandle = VTStore(VTMaxUsed).vHandle + 1
+            VTLastHandle = newHandle
+            newIndex = VTMaxUsed + 1
+            VTMaxUsed = newIndex
+        Else
+            '3.3 (more complex) find a gap in the vHandle sequence in VTStore
+            '(searching back from end) and insert the new element there
+            'TODO: consider tracking last insert point and working back from there
+            Dim insLoc As Long
+            insLoc = VTMaxUsed
+            Do While insLoc > 1 _AndAlso VTStore(insLoc - 1).vHandle > VTStore(insLoc).vHandle - 2
+                insLoc = insLoc - 1
+            Loop
+            newHandle = VTStore(insLoc - 1).vHandle + 1
+            _Assert newHandle < VTStore(insLoc).vHandle, "Insert error, duplicate handle created"
+            newIndex = insLoc
+            VTMaxUsed = VTMaxUsed + 1
+            Dim i As Long
+            For i = VTMaxUsed To insLoc + 1 Step -1
+                VTStore(i) = VTStore(i - 1)
+            Next i
+        End If
+    End If
+    '4. Set up new slot
+    VTStore(newIndex).vHandle = newHandle
+    VTStore(newIndex).vType = VT_NONE
+    VariantNew = newIndex
 End Function
+
+$If VT_USE_BIN_SEARCH = 0 Then
+Function VTNextVStoreIndex& (vtHandle As Long)
+    If VTReleased > 0 Then
+        VTNextVStoreIndex = VTStoreIndexOf(0)
+        VTReleased = VTReleased - 1
+    Else
+        If VTMaxUsed >= UBound(VTStore) Then
+            ReDim _Preserve VTStore(1 To 2 * UBound(VTStore)) As VTHolderStruct
+            'Print "REDIM PRESERVE VTStore up to "; 2 * UBound(VTStore)
+        End If
+        VTMaxUsed = VTMaxUsed + 1
+        VTNextVStoreIndex = VTMaxUsed
+    End If
+End Function
+$End If
 
 Function VTStoreIndexOf& (vHandle As Long)
     'TODO: consider sorting VStore by handle and using binary search
+    $If VT_USE_BIN_SEARCH = 0 Then
     Dim i As Long
     For i = 1 To VTMaxUsed
         If VTStore(i).vHandle = vHandle Then
@@ -437,6 +498,23 @@ Function VTStoreIndexOf& (vHandle As Long)
         End If
     Next i
     VTStoreIndexOf = -1
+    $Else
+        Dim As Long min, max, pivot
+        min = 1
+        max = VTMaxUsed
+        Do
+            pivot = (min + max) \ 2
+            If VTStore(pivot).vHandle = vHandle Then
+                VTStoreIndexOf = pivot
+                Exit Function
+            ElseIf VTStore(pivot).vHandle < vHandle Then
+                min = pivot + 1
+            Else
+                max = pivot - 1
+            End If
+        Loop While min <= max
+        VTStoreIndexOf = 0 'failed
+    $End If
 End Function
 
 Function VTStr$ (vHandle As Long)
@@ -853,17 +931,35 @@ Sub VTRelease (vHandle As Long)
 End Sub
 
 Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
-    If VTStore(vsIndex).vHandle = 0 Then Exit Sub
+    Dim i As Long
+    $If VT_USE_BIN_SEARCH = 0 Then
+        If VTStore(vsIndex).vHandle = 0 Then Exit Sub
+    $End If
     VTReleaseResourcesAt vsIndex
 
-    VTStore(vsIndex).vHandle = 0
-    VTStore(vsIndex).strValue = ""
-    VTReleased = VTReleased + 1
     Dim ub As Long
     ub = UBound(VTStore)
-    If autoCompact _AndAlso ub > 10 _AndAlso VTMaxUsed - VTReleased < ub * 0.4 Then
-        VTCompact ub \ 2
-    End If
+    $If VT_USE_BIN_SEARCH = 0 Then
+        VTStore(vsIndex).vHandle = 0
+        VTStore(vsIndex).vType = VT_NONE
+        VTStore(vsIndex).strValue = ""
+        VTReleased = VTReleased + 1
+        If autoCompact _AndAlso ub > 10 _AndAlso VTMaxUsed - VTReleased < ub * 0.4 Then
+            VTCompact ub \ 2
+        End If
+    $Else
+        'dim i as Integer
+        For i = vsIndex To VTMaxUsed
+            VTStore(i) = VTStore(i + 1)
+        Next i
+        VTStore(VTMaxUsed).vHandle = 0
+        VTStore(VTMaxUsed).vType = VT_NONE
+        VTStore(VTMaxUsed).strValue = ""
+        VTMaxUsed = VTMaxUsed - 1
+        If autoCompact _AndAlso ub > 10 _AndAlso VTMaxUsed < ub * 0.4 Then
+            VTCompact ub \ 2
+        End If
+    $End If
 End Sub
 
 Sub VTReleaseResourcesAt(vsIndex as long)
@@ -897,40 +993,50 @@ end sub
 
 Sub VTReleaseAll
     Dim i As Long
-    For i = 1 To VTMaxUsed
+    For i = VTMaxUsed to 1 step -1
         VTReleaseAt i, _FALSE
     Next i
 
     ReDim VTStore(1& To 10&) As VTHolderStruct
     VTMaxUsed = 0
-    VTReleased = 0
+    $If VT_USE_BIN_SEARCH = 0 Then
+        VTReleased = 0
+    $End If
 End Sub
 
 Sub VTCompact (newUB As Long)
-    _Assert newUB > 10 And newUB * 0.8 > VTMaxUsed - VTReleased, "VTCompact upper bound too low."
-    Dim As Long i, j, newmax
-    If VTReleased > 0 Then
-        j = 2
-        For i = 1 To VTMaxUsed
-            If VTStore(i).vHandle = 0 Then
-                If j <= i Then j = i + 1
-                Do While VTStore(j).vHandle = 0 And j < VTMaxUsed
-                    j = j + 1
-                Loop
-                If j <= VTMaxUsed Then
-                    VTStore(i) = VTStore(j)
-                    VTStore(j).vHandle = 0
-                    VTStore(j).vType = VT_NONE
-                    VTStore(j).strValue = ""
-                    If VTStore(i).vHandle > 0 Then newmax = i
+    $If VT_USE_BIN_SEARCH = 0 Then
+        _Assert newUB > 10 And newUB * 0.8 > VTMaxUsed - VTReleased, "VTCompact upper bound too low."
+    $Else
+        _Assert newUB > 10 And newUB * 0.8 > VTMaxUsed, "VTCompact upper bound too low."
+    $End If
+    Dim As Long newmax
+    newmax = VTMaxUsed
+    $If VT_USE_BIN_SEARCH = 0 Then
+        dim as long i,j
+        If VTReleased > 0 Then
+            j = 2
+            For i = 1 To VTMaxUsed
+                If VTStore(i).vHandle = 0 Then
+                    If j <= i Then j = i + 1
+                    Do While VTStore(j).vHandle = 0 And j < VTMaxUsed
+                        j = j + 1
+                    Loop
+                    If j <= VTMaxUsed Then
+                        VTStore(i) = VTStore(j)
+                        VTStore(j).vHandle = 0
+                        VTStore(j).vType = VT_NONE
+                        VTStore(j).strValue = ""
+                        If VTStore(j).vHandle > 0 Then newmax = j
+                    End If
+                Else
+                    newmax = i
                 End If
-            Else
-                newmax = i
-            End If
-        Next i
-        VTMaxUsed = newmax
-        VTReleased = 0
-    End If
+            Next i
+            VTReleased = 0
+        End If
+    $End If
+    VTMaxUsed = newmax
     ReDim _Preserve VTStore(1& To newUB) As VTHolderStruct
 End Sub
 
@@ -944,20 +1050,11 @@ Sub VTDump
         End If
     Next i
     Print String$(80, Chr$(205))
-    Print "Total:"; UBound(VTStore); " VTStore elements,"; VTReleased; " released, max used ="; VTMaxUsed
+    $If VT_USE_BIN_SEARCH = 0 Then
+        Print "Total:"; UBound(VTStore); " VTStore elements,"; VTReleased; " released, max used ="; VTMaxUsed
+    $Else
+        Print "Total:"; UBound(VTStore); " VTStore elements, max used ="; VTMaxUsed
+    $End If
     Print
 End Sub
 
-Function VTNextVStoreIndex&
-    If VTReleased > 0 Then
-        VTNextVStoreIndex = VTStoreIndexOf(0)
-        VTReleased = VTReleased - 1
-        Exit Function
-    End If
-    Do While VTMaxUsed >= UBound(VTStore)
-        ReDim _Preserve VTStore(1 To 2 * UBound(VTStore)) As VTHolderStruct
-        'Print "REDIM PRESERVE VTStore up to "; 2 * UBound(VTStore)
-    Loop
-    VTMaxUsed = VTMaxUsed + 1
-    VTNextVStoreIndex = VTMaxUsed
-End Function

@@ -5,12 +5,17 @@
 $IncludeOnce
 Option _Explicit
 
+'place line after next in user code before '$Include: 'variant.bi'
+$If VT_USE_BIN_SEARCH = UNDEFINED Then
+    $Let VT_USE_BIN_SEARCH = 1
+$End If
+
 Const VT_NONE = 0
 Const VT_STR = 1
 Const VT_BYT = 2 'needs testing
 Const VT_INT = 3
 Const VT_LNG = 4
-CONST VT_INT64 = 5 'needs testing
+Const VT_INT64 = 5 'needs testing
 Const VT_SNG = 6
 Const VT_DBL = 7
 Const VT_FLT = 8 'needs testing
@@ -28,7 +33,7 @@ Type VTHolderStruct
     vType As _Byte
     lbound As Long
     uBound As Long
-    arrayMemCopy as _MEM
+    arrayMemCopy As _MEM
     strValue As String
     intValue As _Integer64 'for byte, short, integer, long, integer64, or variant array handle (longarray)
     sngValue As Single
@@ -37,4 +42,7 @@ Type VTHolderStruct
 End Type
 
 ReDim Shared VTStore(1& To 10&) As VTHolderStruct
-Dim Shared As Long VTMaxUsed, VTReleased, VTLastHandle
+Dim Shared As Long VTMaxUsed, VTLastHandle
+$If VT_USE_BIN_SEARCH = 0 Then
+Dim Shared As Long VTReleased
+$End If
