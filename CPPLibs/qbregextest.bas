@@ -7,14 +7,12 @@ Print RegexMatch%("It's Mark." + Chr$(0), "Mark" + Chr$(0)) 'match ignoring case
 Print RegexMatch%("It's Mark." + Chr$(0), "^.*MARK.*$" + Chr$(0)) 'match ignoring case
 Print RegexMatchEx%("It's Mark." + Chr$(0), "^.*MARK.*$" + Chr$(0), REGEX_icase) 'match ignoring case
 
-'these work ok - case sensitive matching
 Print RegExpSearch("This is a test", "is", 0)
 Print RegExpSearch("This is a test", "Is", 0) 'REGEX_icase)
 Print RegExpSearch("This is a test", "IS", 0) 'REGEX_icase)
 Print RegExpSearch("This IS a test", "IS", 0) 'REGEX_icase)
 Print RegExpSearch("This IS a test", "iS", 0) 'REGEX_icase)
 
-'these behave as if no ignore case flag is present
 Print RegExpSearch("This is a test", "is", REGEX_icase)
 Print RegExpSearch("This is a test", "Is", REGEX_icase)
 Print RegExpSearch("This is a test", "IS", REGEX_icase)
